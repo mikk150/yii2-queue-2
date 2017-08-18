@@ -8,6 +8,7 @@
 namespace yii\queue\serializers;
 
 use yii\base\Object;
+use yii\queue\Job;
 
 /**
  * Class PhpSerializer
@@ -19,7 +20,7 @@ class PhpSerializer extends Object implements Serializer
     /**
      * @inheritdoc
      */
-    public function serialize($job)
+    public function serialize(Job $job)
     {
         return serialize($job);
     }

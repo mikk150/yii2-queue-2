@@ -20,7 +20,7 @@ interface Serializer
      * @param Job|mixed $job
      * @return string
      */
-    public function serialize($job);
+    public function serialize(Job $job);
 
     /**
      * @param string $serialized
