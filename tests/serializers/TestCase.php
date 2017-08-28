@@ -43,39 +43,7 @@ abstract class TestCase extends \tests\TestCase
             // Job object
             [
                 new SimpleJob(['uid' => 123])
-            ],
-            // Any object
-            [
-                new TestObject([
-                    'foo' => 1,
-                    'bar' => [
-                        new TestObject(['foo' => 1]),
-                    ]
-                ]),
-            ],
-            // Array of mixed data
-            [
-                [
-                    'a' => 'b',
-                    'c' => [
-                        222,
-                        new TestObject(),
-                    ],
-                    'd' => [
-                        new TestObject(),
-                    ],
-                ],
-            ],
-            // Scalar
-            [
-                'string value'
-            ],
+            ]
         ];
     }
-}
-
-class TestObject extends Object
-{
-    public $foo;
-    public $bar;
 }

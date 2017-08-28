@@ -10,11 +10,12 @@ namespace yii\queue;
 /**
  * Interface Job
  *
- * @author Mikk Tendermakk <mikk150@gmail.com>
+ * @author Roman Zhuravlev <zhuravljov@gmail.com>
  */
 interface Job
 {
     /**
+     * @param Queue $queue which pushed and is handling the job
      */
-    public function execute();
+    public function execute($queue);
 }

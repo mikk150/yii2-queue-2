@@ -5,7 +5,7 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace yii\queue\db\migrations;
+namespace yii\queue\messengers\db\migrations;
 
 use yii\db\Migration;
 

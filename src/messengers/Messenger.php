@@ -42,6 +42,16 @@ abstract class Messenger extends Object
     abstract public function push($message, $delay);
 
     /**
+     * Pushes a message.
+     *
+     * @param      string  $message  The message
+     * @param      int     $delay    The delay
+     *
+     * @return     mixed
+     */
+    abstract public function pop();
+
+    /**
      * { function_description }
      *
      * @param      string  $message  The message

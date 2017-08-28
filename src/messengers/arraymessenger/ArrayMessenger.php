@@ -24,13 +24,4 @@ class ArrayMessenger extends \yii\queue\messengers\Messenger
 
         $this->_messages[] = $message;
     }
-
-    public function listen()
-    {
-        $queue = \GuzzleHttp\Promise\queue();
-        while (true) {
-            
-        }
-        
-    }
 }
