@@ -34,12 +34,13 @@ abstract class Messenger extends Object
     /**
      * Pushes a message.
      *
-     * @param      string  $message  The message
-     * @param      int     $delay    The delay
+     * @param      string  $message   The message
+     * @param      int     $delay     The delay
+     * @param      int  $priority  The priority
      *
      * @return     mixed
      */
-    abstract public function push($message, $delay);
+    abstract public function push($message, $delay, $priority);
 
     /**
      * Pushes a message.

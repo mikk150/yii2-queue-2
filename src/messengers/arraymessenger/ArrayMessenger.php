@@ -16,10 +16,14 @@ class ArrayMessenger extends \yii\queue\messengers\Messenger
         return array_pop($this->_messages);
     }
 
-    public function push($message, $delay = null)
+    public function push($message, $delay = null, $priority = null)
     {
         if ($delay) {
             throw new NotSupportedException("Delay is not supported on ArrayMessenger");
+        }
+
+        if ($priority) {
+            throw new NotSupportedException("Priority is not supported on ArrayMessenger");
         }
 
         $this->_messages[] = $message;
