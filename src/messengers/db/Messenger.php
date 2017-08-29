@@ -62,6 +62,8 @@ class Messenger extends \yii\queue\messengers\Messenger
      */
     public function pop()
     {
+        $message = null;
+
         if (!$this->mutex->acquire(__CLASS__ . $this->channel, $this->mutexTimeout)) {
             throw new Exception("Has not waited the lock.");
         }
@@ -74,11 +76,18 @@ class Messenger extends \yii\queue\messengers\Messenger
            ->limit(1)
            ->one($this->db);
 
-        $this->mutex->release(__CLASS__ . $this->channel);
+        if (is_array($payload)) {
+            $payload['reserved_at'] = time();
+            $payload['attempt'] = (int)$payload['attempt'] + 1;
+            $this->db->createCommand()->update($this->tableName, [
+                'reserved_at' => $payload['reserved_at'], 'attempt' => $payload['attempt']],
+                ['id' => $payload['id']]
+            )->execute();
 
-        if ($payload) {
-            return $payload['message'];
+            $message = $payload['message'];
         }
+
+        $this->mutex->release(__CLASS__ . $this->channel);
 
         return null;
     }

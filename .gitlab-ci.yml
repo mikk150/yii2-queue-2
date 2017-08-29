@@ -1,0 +1,27 @@
+services:
+  - mysql
+
+before_script:
+  - composer install --prefer-dist --no-interaction
+  - php tests/yii mysql-migrate --interactive=0
+
+# Set any variables we need
+variables:
+  # Configure mysql environment variables (https://hub.docker.com/r/_/mysql/)
+  MYSQL_DATABASE: mysql_database
+  MYSQL_ROOT_PASSWORD: mysql_strong_password
+
+test:5.6:
+  image: mikk150/yii2-base:5.6
+  script:
+    - vendor/bin/phpunit
+
+test:7.0:
+  image: mikk150/yii2-base:7.0
+  script:
+    - vendor/bin/phpunit
+
+test:7.1:
+  image: mikk150/yii2-base:7.1
+  script:
+    - vendor/bin/phpunit
