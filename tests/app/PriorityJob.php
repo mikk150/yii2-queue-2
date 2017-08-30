@@ -20,7 +20,7 @@ class PriorityJob extends Object implements Job
 {
     public $number;
 
-    public function execute($queue)
+    public function execute()
     {
         file_put_contents(self::getFileName(), $this->number, FILE_APPEND);
     }

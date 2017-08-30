@@ -20,7 +20,7 @@ class SimpleJob extends Object implements Job
 {
     public $uid;
 
-    public function execute($queue)
+    public function execute()
     {
         file_put_contents($this->getFileName(), '');
     }

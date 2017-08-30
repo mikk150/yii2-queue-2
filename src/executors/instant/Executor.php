@@ -14,9 +14,9 @@ class Executor extends \yii\queue\executors\Executor
      */
     public function handleMessage($message, $id = null, $ttr = null, $attempt = null)
     {
-        return new Promise(function ($resolve, $reject) {
-            $job = $this->getQueue()->getSerializer()->unserialize();
+        return new Promise(function ($resolve, $reject) use (&$message) {
             try {
+                $job = $this->getQueue()->getSerializer()->unserialize($message);
                 call_user_func($resolve, $job->execute());
             } catch (Exception $e) {
                 call_user_func($reject, $e);

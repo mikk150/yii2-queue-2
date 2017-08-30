@@ -14,7 +14,7 @@ use yii\queue\messengers\Messenger;
 /**
  * Class TestCase
  *
- * @author Roman Zhuravlev <zhuravljov@gmail.com>
+ * @author Mikk Tendermann <mikk150@gmail.com>
  */
 abstract class TestCase extends \tests\TestCase
 {
