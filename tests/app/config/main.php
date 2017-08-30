@@ -16,6 +16,14 @@ $config = [
                 PDO::MYSQL_ATTR_INIT_COMMAND => 'SET sql_mode = "STRICT_ALL_TABLES"',
             ],
         ],
+
+        'pgsql' => [
+            'class' => \yii\db\Connection::class,
+            'dsn' => 'pgsql:host=postgres;dbname=yii2_queue_test',
+            'username' => 'postgres',
+            'password' => '',
+            'charset' => 'utf8',
+        ],
     ],
 ];
 
