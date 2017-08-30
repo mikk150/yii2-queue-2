@@ -16,7 +16,8 @@ class PostgresMessengerTest extends TestCase
             'mutex' => [
                 'class' => \yii\mutex\PgsqlMutex::class,
                 'db' => 'pgsql',
-            ]
+            ],
+            'mutexTimeout' => 0
         ]);
     }
 }
