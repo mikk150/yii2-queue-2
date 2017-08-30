@@ -60,7 +60,7 @@ class Messenger extends \yii\queue\messengers\Messenger
     /**
      * @inheritdoc
      */
-    public function pop()
+    public function reserve()
     {
         $message = null;
 
@@ -76,6 +76,7 @@ class Messenger extends \yii\queue\messengers\Messenger
            ->limit(1)
            ->one($this->db);
 
+
         if (is_array($payload)) {
             $payload['reserved_at'] = time();
             $payload['attempt'] = (int)$payload['attempt'] + 1;
@@ -84,12 +85,42 @@ class Messenger extends \yii\queue\messengers\Messenger
                 ['id' => $payload['id']]
             )->execute();
 
-            $message = $payload['message'];
+            $message = new Message([
+                'id' => $payload['id'],
+                'channel' => $payload['channel'],
+                'message' => $payload['job'],
+                'pushed_at' => $payload['pushed_at'],
+                'ttr' => $payload['ttr'],
+                'delay' => $payload['delay'],
+                'priority' => $payload['priority'],
+                'reserved_at' => $payload['reserved_at'],
+                'attempt' => $payload['attempt'],
+                'done_at' => $payload['done_at'],
+            ]);
         }
 
         $this->mutex->release(__CLASS__ . $this->channel);
 
-        return null;
+        return $message;
+    }
+
+    /**
+     * @param array $payload
+     */
+    public function release($payload)
+    {
+        if ($this->deleteReleased) {
+            $this->db->createCommand()->delete(
+                $this->tableName,
+                ['id' => $message->id]
+            )->execute();
+        } else {
+            $this->db->createCommand()->update(
+                $this->tableName,
+                ['done_at' => time()],
+                ['id' => $message->id]
+            )->execute();
+        }
     }
 
     /**

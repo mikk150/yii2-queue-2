@@ -3,6 +3,7 @@
 namespace yii\queue;
 
 use yii\di\Instance;
+use React\EventLoop\Factory;
 use yii\queue\messengers\Messenger;
 use yii\queue\executors\Executor;
 use yii\queue\serializers\Serializer;
@@ -13,8 +14,12 @@ use yii\queue\serializers\Serializer;
 class Queue extends \yii\base\Component
 {
     private $_serializer;
+    
     private $_messenger;
+
     private $_executor;
+
+    private $_eventLoop;
 
     /**
      * Sets the messenger.
@@ -76,6 +81,19 @@ class Queue extends \yii\base\Component
     public function getMessenger()
     {
         return $this->_messenger;
+    }
+
+    /**
+     * Gets the event loop.
+     *
+     * @return     \React\EventLoop\LoopInterface  The event loop.
+     */
+    public function getEventLoop()
+    {
+        if (!$this->_eventLoop) {
+            $this->_eventLoop = Factory::create();
+        }
+        return $this->_eventLoop;
     }
 
     /**

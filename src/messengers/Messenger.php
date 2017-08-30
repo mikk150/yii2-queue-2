@@ -43,14 +43,18 @@ abstract class Messenger extends Object
     abstract public function push($message, $delay, $priority);
 
     /**
-     * Pushes a message.
+     * Reserves a message.
      *
-     * @param      string  $message  The message
-     * @param      int     $delay    The delay
+     * @return     Message
+     */
+    abstract public function reserve();
+
+    /**
+     * Release a message.
      *
      * @return     mixed
      */
-    abstract public function pop();
+    abstract public function release($payload);
 
     /**
      * { function_description }
@@ -65,5 +69,19 @@ abstract class Messenger extends Object
     public function handleMessage($id, $message, $ttr, $attempt)
     {
         return $this->getQueue()->handleMessage($id, $message, $ttr, $attempt);
+    }
+
+    public function listen()
+    {
+        $this->queue->getEventLoop()->addPeriodicTimer(0.1, function () {
+            if ($payload = $this->pop()) {
+                $this->handleMessage(
+                    $payload['id'],
+                    $payload['message'],
+                    $payload['ttr'],
+                    $payload['attempt']
+                );
+            }
+        });
     }
 }

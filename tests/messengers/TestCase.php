@@ -32,9 +32,9 @@ abstract class TestCase extends \tests\TestCase
 
         $messenger->push('awesomemessage');
 
-        $actual = $messenger->pop();
+        $actual = $messenger->reserve();
 
-        $this->assertEquals('awesomemessage', $actual);
+        $this->assertEquals('awesomemessage', $actual->message);
     }
 
     /**
@@ -44,7 +44,7 @@ abstract class TestCase extends \tests\TestCase
     {
         $messenger = $this->createMessenger();
 
-        $actual = $messenger->pop();
+        $actual = $messenger->reserve();
 
         $this->assertNull($actual);
     }

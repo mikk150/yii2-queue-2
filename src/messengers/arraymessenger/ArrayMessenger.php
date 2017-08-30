@@ -3,6 +3,7 @@
 namespace yii\queue\messengers\arraymessenger;
 
 use yii\base\NotSupportedException;
+use yii\queue\Message;
 
 /**
 * 
@@ -11,9 +12,20 @@ class ArrayMessenger extends \yii\queue\messengers\Messenger
 {
     private $_messages = [];
 
-    public function pop()
+    public function reserve()
     {
-        return array_pop($this->_messages);
+        $message = null;
+        if ($payload = array_pop($this->_messages)) {
+            $message = new Message([
+                'message' => $payload
+            ]);
+        }
+        return $message;
+    }
+
+    public function release($message)
+    {
+        return true;
     }
 
     public function push($message, $delay = null, $priority = null)

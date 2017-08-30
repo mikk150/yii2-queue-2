@@ -2,7 +2,7 @@
 
 namespace yii\queue\executors\instant;
 
-use GuzzleHttp\Promise\Promise;
+use Kraken\Promise\Promise;
 use \Exception;
 
 /**
@@ -14,15 +14,12 @@ class Executor extends \yii\queue\executors\Executor
      */
     public function handleMessage($message, $id = null, $ttr = null, $attempt = null)
     {
-        /**
-         * @var  \yii\queue\Job
-         */
-        return $promise = new Promise(function () use (&$promise, $message) {        
-            $job = $this->getQueue()->getSerializer()->unserialize($message);
+        return new Promise(function ($resolve, $reject) {
+            $job = $this->getQueue()->getSerializer()->unserialize();
             try {
-                $promise->resolve($job->execute());
+                call_user_func($resolve, $job->execute());
             } catch (Exception $e) {
-                $promise->reject($e);
+                call_user_func($reject, $e);
             }
         });
     }
