@@ -4,6 +4,7 @@ namespace yii\queue\messengers;
 
 use yii\base\Object;
 use yii\queue\Queue;
+use Kraken\Promise\Promise;
 
 /**
  * @property-write Queue $queue
@@ -74,13 +75,15 @@ abstract class Messenger extends Object
     public function listen()
     {
         $this->queue->getEventLoop()->addPeriodicTimer(0.1, function () {
-            if ($payload = $this->pop()) {
+            if ($payload = $this->reserve()) {
                 $this->handleMessage(
-                    $payload['id'],
-                    $payload['message'],
-                    $payload['ttr'],
-                    $payload['attempt']
-                );
+                    $payload->id,
+                    $payload->message,
+                    $payload->ttr,
+                    $payload->attempt
+                )->then(function ($result) use ($payload) {
+                    $this->release($payload);
+                });
             }
         });
     }

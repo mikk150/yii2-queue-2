@@ -3,12 +3,13 @@ services:
   - postgres
 
 before_script:
-  - apt-get install -y libpq-dev postgresql-client-9.4
-  - docker-php-ext-install pgsql pdo pdo_pgsql
+  - apt-get install -y libpq-dev postgresql-client-9.4 libsqlite3-dev
+  - docker-php-ext-install pgsql pdo pdo_pgsql pdo_sqlite
   - composer install --prefer-dist --no-interaction
   - psql -c 'create database yii2_queue_test;' -U postgres -h postgres
   - php tests/yii mysql-migrate --interactive=0
   - php tests/yii pgsql-migrate --interactive=0
+  - php tests/yii sqlite-migrate --interactive=0
 
 # Set any variables we need
 variables:

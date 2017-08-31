@@ -24,6 +24,11 @@ $config = [
             'password' => '',
             'charset' => 'utf8',
         ],
+
+        'sqlite' => [
+            'class' => \yii\db\Connection::class,
+            'dsn' => 'sqlite:@runtime/yii2_queue_test.db',
+        ],
     ],
 ];
 
