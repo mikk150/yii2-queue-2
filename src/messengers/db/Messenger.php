@@ -85,6 +85,10 @@ class Messenger extends \yii\queue\messengers\Messenger
                 ['id' => $payload['id']]
             )->execute();
 
+            if (is_resource($payload['job'])) {
+                $payload['job'] = stream_get_contents($payload['job']);
+            }
+
             $message = new Message([
                 'id' => $payload['id'],
                 'channel' => $payload['channel'],
