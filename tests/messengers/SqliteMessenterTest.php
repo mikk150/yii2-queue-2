@@ -15,8 +15,7 @@ class SqliteMessengerTest extends TestCase
             'db' => 'sqlite',
             'mutex' => [
                 'class' => \yii\mutex\FileMutex::class,
-            ],
-            'mutexTimeout' => 0
+            ]
         ]);
     }
 }
