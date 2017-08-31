@@ -33,7 +33,8 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "2.1.x-dev"
+            "dev-master": "2.1.x-dev",
+            "dev-110-uncouple-drivers": "2.2.x-dev"
         }
     },
     "repositories": [
