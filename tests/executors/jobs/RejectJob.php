@@ -15,6 +15,6 @@ class RejectJob extends Object implements Job
 
     public function execute()
     {
-        throw new Exception('test');
+        throw new Exception($this->message);
     }
 }

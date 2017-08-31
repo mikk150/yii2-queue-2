@@ -54,7 +54,7 @@ abstract class TestCase extends \tests\TestCase
         $executor->handleMessage($message)->then(function ($result) {
         }, function ($e) {
             $this->assertInstanceOf(Exception::class, $e);
-            $this->assertEquals('tere', $e->getMessage());
+            $this->assertEquals('test', $e->getMessage());
         });
     }
 }
