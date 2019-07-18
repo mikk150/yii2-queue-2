@@ -7,6 +7,9 @@
 
 namespace tests\app\benchmark;
 
+use tests\app\SimpleJob;
+use Yii;
+
 /**
  * Benchmark commands.
  *
@@ -40,5 +43,15 @@ class Controller extends \yii\console\Controller
         $duration = time() - $this->startedAt;
         $this->stdout("\nCompleted in {$duration} s.\n");
         return parent::afterAction($action, $result);
+    }
+
+    public function actionPushLoadsOfJobs($queue, $jobs = 1000)
+    {
+        for ($i=0; $i < $jobs; $i++) { 
+            $job = new SimpleJob([
+                'uid' => Yii::$app->security->generateRandomString()
+            ]);
+            Yii::$app->get($queue)->push($job);
+        }
     }
 }

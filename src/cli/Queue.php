@@ -7,6 +7,8 @@
 
 namespace yii\queue\cli;
 
+use React\EventLoop\Factory;
+use React\EventLoop\LoopInterface as ReactLoopInterface;
 use Yii;
 use yii\base\BootstrapInterface;
 use yii\base\InvalidConfigException;
@@ -62,6 +64,10 @@ abstract class Queue extends BaseQueue implements BootstrapInterface
      */
     private $_workerPid;
 
+    /**
+     * @var ReactLoopInterface
+     */
+    private $_loop;
 
     /**
      * @return string command id
@@ -109,7 +115,6 @@ abstract class Queue extends BaseQueue implements BootstrapInterface
             return $event->exitCode;
         }
 
-        $exitCode = null;
         try {
             call_user_func($handler, function () use ($loop, $event) {
                 $this->trigger(self::EVENT_WORKER_LOOP, $event);
@@ -145,6 +150,17 @@ abstract class Queue extends BaseQueue implements BootstrapInterface
         }
 
         return parent::handleMessage($id, $message, $ttr, $attempt);
+    }
+
+    /**
+     * @var ReactLoopInterface
+     */
+    public function getLoop()
+    {
+        if ( !$this->_loop) {
+            $this->_loop = Factory::create();
+        }
+        return $this->_loop;
     }
 
     /**

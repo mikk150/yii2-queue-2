@@ -71,19 +71,31 @@ class Queue extends CliQueue
     public function run($repeat, $timeout = 0)
     {
         return $this->runWorker(function (callable $canContinue) use ($repeat, $timeout) {
-            while ($canContinue()) {
-                if (($payload = $this->reserve()) !== null) {
-                    list($id, $message, $ttr, $attempt) = $payload;
-                    if ($this->handleMessage($id, $message, $ttr, $attempt)) {
-                        $this->delete($payload);
-                    }
-                } elseif (!$repeat) {
-                    break;
-                } elseif ($timeout) {
-                    sleep($timeout);
-                }
-            }
+            $this->doWork($canContinue, $repeat, $timeout);
+            $this->getLoop()->run();
         });
+    }
+
+    protected function doWork(callable $canContinue, $repeat, $timeout)
+    {
+        if ($canContinue()) {
+            if (($payload = $this->reserve()) !== null) {
+                list($id, $message, $ttr, $attempt) = $payload;
+                $this->handleMessage($id, $message, $ttr, $attempt)->then(function() use ($payload) {
+                    $this->delete($payload);
+                });
+
+                $this->getLoop()->futureTick(function () use ($canContinue, $repeat, $timeout) {
+                    $this->doWork($canContinue, $repeat, $timeout);
+                });
+                return ;
+            }
+            if ($repeat) {
+                $this->getLoop()->addTimer($timeout, function () use ($canContinue, $repeat, $timeout) {
+                    $this->doWork($canContinue, $repeat, $timeout);
+                });
+            }
+        }
     }
 
     /**
