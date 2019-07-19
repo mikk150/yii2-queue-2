@@ -160,12 +160,14 @@ class Queue extends AsyncQueue
     }
 
     /**
-     * Deletes message by ID.
+     * Deletes reserved message.
      *
-     * @param int $id of a message
+     * @param array $payload
      */
-    protected function delete($id)
+    protected function delete($payload)
     {
+        list($id) = $payload;
+
         $this->redis->zrem("$this->channel.reserved", $id);
         $this->redis->hdel("$this->channel.attempts", $id);
         $this->redis->hdel("$this->channel.messages", $id);

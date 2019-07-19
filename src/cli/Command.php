@@ -56,7 +56,6 @@ abstract class Command extends Controller
      */
     public $phpBinary;
 
-
     /**
      * @inheritdoc
      */

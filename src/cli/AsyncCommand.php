@@ -66,7 +66,18 @@ abstract class AsyncCommand extends Command
             function ($fulfill, $reject) use ($process, $message) {
                 $process->start($this->queue->getLoop());
                 $process->stdin->end($message);
-
+                $process->stderr->on(
+                    'data',
+                    function ($buffer) {
+                        $this->stderr($buffer);
+                    }
+                );
+                $process->stdout->on(
+                    'data',
+                    function ($buffer) {
+                        $this->stdout($buffer);
+                    }
+                );
                 $process->on(
                     'exit',
                     function ($exitCode) use ($fulfill, $reject) {
