@@ -34,7 +34,7 @@ abstract class AsyncCommand extends Command
      * @param string $message
      * @param int $ttr time to reserve
      * @param int $attempt number
-     * @return bool
+     * @return Promise
      * @throws
      * @see actionExec()
      */
@@ -70,7 +70,6 @@ abstract class AsyncCommand extends Command
                 $process->on(
                     'exit',
                     function ($exitCode) use ($fulfill, $reject) {
-                        echo 'Process exited with code ' . $exitCode . PHP_EOL;
                         if ($exitCode == self::EXEC_DONE) {
                             call_user_func($fulfill, $exitCode);
                             return ;
