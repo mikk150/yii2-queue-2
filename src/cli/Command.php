@@ -7,13 +7,9 @@
 
 namespace yii\queue\cli;
 
-use React\ChildProcess\Process;
-use React\EventLoop\Factory;
-use React\EventLoop\LoopInterface;
-use React\Promise\Promise;
-// use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Exception\RuntimeException as ProcessRuntimeException;
+use Symfony\Component\Process\Process;
 use yii\console\Controller;
 use yii\queue\ExecEvent;
 
@@ -59,6 +55,7 @@ abstract class Command extends Controller
      * @since 2.0.3
      */
     public $phpBinary;
+
 
     /**
      * @inheritdoc
@@ -146,7 +143,6 @@ abstract class Command extends Controller
      */
     public function actionExec($id, $ttr, $attempt, $pid)
     {
-        echo 'started' . PHP_EOL;
         if ($this->queue->execute($id, file_get_contents('php://stdin'), $ttr, $attempt, $pid ?: null)) {
             return self::EXEC_DONE;
         }
@@ -186,27 +182,28 @@ abstract class Command extends Controller
             $cmd[] = '--color=' . $this->isColorEnabled();
         }
 
-        $process = new Process(join(' ', $cmd));
-
-        return new Promise(function ($fulfull, $reject) use ($process, $message) {
-            $process->start($this->queue->getLoop());
-            $process->stdin->end($message);
-            $process->stdout->on('data', function ($data) {
-                echo $data;
-            });
-
-            $process->on('exit', function ($exitCode, $termSignal) use ($fulfill, $reject) {
-                echo 'Process exited with code ' . $exitCode . PHP_EOL;
-                if ($exitCode == 0) {
-                    call_user_func($fulfill, $exitCode);
-                    return ;
+        $process = new Process($cmd, null, null, $message, $ttr);
+        try {
+            $result = $process->run(function ($type, $buffer) {
+                if ($type === Process::ERR) {
+                    $this->stderr($buffer);
+                } else {
+                    $this->stdout($buffer);
                 }
-                $reject($exitCode);
             });
-
-            
-        }, function () use (&$process) {
-            $process->terminate();
-        });
+            if (!in_array($result, [self::EXEC_DONE, self::EXEC_RETRY])) {
+                throw new ProcessFailedException($process);
+            }
+            return $result === self::EXEC_DONE;
+        } catch (ProcessRuntimeException $error) {
+            list($job) = $this->queue->unserializeMessage($message);
+            return $this->queue->handleError(new ExecEvent([
+                'id' => $id,
+                'job' => $job,
+                'ttr' => $ttr,
+                'attempt' => $attempt,
+                'error' => $error,
+            ]));
+        }
     }
 }

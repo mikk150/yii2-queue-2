@@ -10,7 +10,7 @@ namespace yii\queue\redis;
 use yii\base\InvalidArgumentException;
 use yii\base\NotSupportedException;
 use yii\di\Instance;
-use yii\queue\cli\Queue as CliQueue;
+use yii\queue\cli\AsyncQueue;
 use yii\redis\Connection;
 
 /**
@@ -18,7 +18,7 @@ use yii\redis\Connection;
  *
  * @author Roman Zhuravlev <zhuravljov@gmail.com>
  */
-class Queue extends CliQueue
+class Queue extends AsyncQueue
 {
     /**
      * @var Connection|array|string
@@ -54,18 +54,12 @@ class Queue extends CliQueue
      */
     public function run($repeat, $timeout = 0)
     {
-        return $this->runWorker(function (callable $canContinue) use ($repeat, $timeout) {
-            while ($canContinue()) {
-                if (($payload = $this->reserve($timeout)) !== null) {
-                    list($id, $message, $ttr, $attempt) = $payload;
-                    if ($this->handleMessage($id, $message, $ttr, $attempt)) {
-                        $this->delete($id);
-                    }
-                } elseif (!$repeat) {
-                    break;
-                }
+        return $this->runWorker(
+            function (callable $canContinue) use ($repeat, $timeout) {
+                $this->doWork($canContinue, $repeat, $timeout);
+                $this->getLoop()->run();
             }
-        });
+        );
     }
 
     /**
@@ -126,10 +120,9 @@ class Queue extends CliQueue
     }
 
     /**
-     * @param int $timeout timeout
      * @return array|null payload
      */
-    protected function reserve($timeout)
+    protected function reserve()
     {
         // Moves delayed and reserved jobs into waiting list with lock for one second
         if ($this->redis->set("$this->channel.moving_lock", true, 'NX', 'EX', 1)) {
@@ -138,12 +131,8 @@ class Queue extends CliQueue
         }
 
         // Find a new waiting message
-        $id = null;
-        if (!$timeout) {
-            $id = $this->redis->rpop("$this->channel.waiting");
-        } elseif ($result = $this->redis->brpop("$this->channel.waiting", $timeout)) {
-            $id = $result[1];
-        }
+        $id = $this->redis->rpop("$this->channel.waiting");
+
         if (!$id) {
             return null;
         }

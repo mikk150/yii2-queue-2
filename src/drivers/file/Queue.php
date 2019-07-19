@@ -12,14 +12,14 @@ use yii\base\InvalidArgumentException;
 use yii\base\InvalidConfigException;
 use yii\base\NotSupportedException;
 use yii\helpers\FileHelper;
-use yii\queue\cli\Queue as CliQueue;
+use yii\queue\cli\AsyncQueue;
 
 /**
  * File Queue.
  *
  * @author Roman Zhuravlev <zhuravljov@gmail.com>
  */
-class Queue extends CliQueue
+class Queue extends AsyncQueue
 {
     /**
      * @var string
@@ -70,32 +70,12 @@ class Queue extends CliQueue
      */
     public function run($repeat, $timeout = 0)
     {
-        return $this->runWorker(function (callable $canContinue) use ($repeat, $timeout) {
-            $this->doWork($canContinue, $repeat, $timeout);
-            $this->getLoop()->run();
-        });
-    }
-
-    protected function doWork(callable $canContinue, $repeat, $timeout)
-    {
-        if ($canContinue()) {
-            if (($payload = $this->reserve()) !== null) {
-                list($id, $message, $ttr, $attempt) = $payload;
-                $this->handleMessage($id, $message, $ttr, $attempt)->then(function() use ($payload) {
-                    $this->delete($payload);
-                });
-
-                $this->getLoop()->futureTick(function () use ($canContinue, $repeat, $timeout) {
-                    $this->doWork($canContinue, $repeat, $timeout);
-                });
-                return ;
+        return $this->runWorker(
+            function (callable $canContinue) use ($repeat, $timeout) {
+                $this->doWork($canContinue, $repeat, $timeout);
+                $this->getLoop()->run();
             }
-            if ($repeat) {
-                $this->getLoop()->addTimer($timeout, function () use ($canContinue, $repeat, $timeout) {
-                    $this->doWork($canContinue, $repeat, $timeout);
-                });
-            }
-        }
+        );
     }
 
     /**

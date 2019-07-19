@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link http://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
@@ -8,14 +9,14 @@
 namespace yii\queue\redis;
 
 use yii\console\Exception;
-use yii\queue\cli\Command as CliCommand;
+use yii\queue\cli\AsyncCommand;
 
 /**
  * Manages application redis-queue.
  *
  * @author Roman Zhuravlev <zhuravljov@gmail.com>
  */
-class Command extends CliCommand
+class Command extends AsyncCommand
 {
     /**
      * @var Queue
