@@ -8,14 +8,14 @@
 namespace yii\queue\db;
 
 use yii\console\Exception;
-use yii\queue\cli\Command as CliCommand;
+use yii\queue\cli\AsyncCommand;
 
 /**
  * Manages application db-queue.
  *
  * @author Roman Zhuravlev <zhuravljov@gmail.com>
  */
-class Command extends CliCommand
+class Command extends AsyncCommand
 {
     /**
      * @var Queue

@@ -13,14 +13,14 @@ use yii\db\Connection;
 use yii\db\Query;
 use yii\di\Instance;
 use yii\mutex\Mutex;
-use yii\queue\cli\Queue as CliQueue;
+use yii\queue\cli\AsyncQueue;
 
 /**
  * Db Queue.
  *
  * @author Roman Zhuravlev <zhuravljov@gmail.com>
  */
-class Queue extends CliQueue
+class Queue extends AsyncQueue
 {
     /**
      * @var Connection|array|string
@@ -74,22 +74,8 @@ class Queue extends CliQueue
     public function run($repeat, $timeout = 0)
     {
         return $this->runWorker(function (callable $canContinue) use ($repeat, $timeout) {
-            while ($canContinue()) {
-                if ($payload = $this->reserve()) {
-                    if ($this->handleMessage(
-                        $payload['id'],
-                        $payload['job'],
-                        $payload['ttr'],
-                        $payload['attempt']
-                    )) {
-                        $this->release($payload);
-                    }
-                } elseif (!$repeat) {
-                    break;
-                } elseif ($timeout) {
-                    sleep($timeout);
-                }
-            }
+            $this->doWork($canContinue, $repeat, $timeout);
+            $this->getLoop()->run();
         });
     }
 
@@ -183,6 +169,7 @@ class Queue extends CliQueue
 
                 // Reserve one message
                 $payload = (new Query())
+                    ->select(['id', 'job', 'ttr', 'attempt'])
                     ->from($this->tableName)
                     ->andWhere(['channel' => $this->channel, 'reserved_at' => null])
                     ->andWhere('[[pushed_at]] <= :time - [[delay]]', [':time' => time()])
@@ -207,8 +194,9 @@ class Queue extends CliQueue
             } finally {
                 $this->mutex->release(__CLASS__ . $this->channel);
             }
-
-            return $payload;
+            if (is_array($payload)) {
+                return array_values($payload);
+            }
         });
     }
 
@@ -217,18 +205,19 @@ class Queue extends CliQueue
     /**
      * @param array $payload
      */
-    protected function release($payload)
+    protected function delete($payload)
     {
+        list($id) = $payload;
         if ($this->deleteReleased) {
             $this->db->createCommand()->delete(
                 $this->tableName,
-                ['id' => $payload['id']]
+                ['id' => $id]
             )->execute();
         } else {
             $this->db->createCommand()->update(
                 $this->tableName,
                 ['done_at' => time()],
-                ['id' => $payload['id']]
+                ['id' => $id]
             )->execute();
         }
     }
