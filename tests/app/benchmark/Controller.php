@@ -23,6 +23,7 @@ class Controller extends \yii\console\Controller
     {
         return [
             'waiting' => waiting\Action::class,
+            'queue' => queue\Action::class,
         ];
     }
 
