@@ -7,12 +7,16 @@
 
 namespace yii\queue;
 
-use Yii;
+use React\EventLoop\Factory;
+use React\Promise\Promise;
 use yii\base\Component;
 use yii\base\InvalidArgumentException;
 use yii\base\InvalidConfigException;
 use yii\di\Instance;
 use yii\helpers\VarDumper;
+use yii\queue\ExecEvent;
+use yii\queue\InvalidJobException;
+use yii\queue\PushEvent;
 use yii\queue\serializers\PhpSerializer;
 use yii\queue\serializers\SerializerInterface;
 
@@ -82,6 +86,10 @@ abstract class Queue extends Component
     private $pushDelay;
     private $pushPriority;
 
+    /**
+     * @var ReactLoopInterface
+     */
+    private $_loop;
 
     /**
      * @inheritdoc
@@ -223,7 +231,7 @@ abstract class Queue extends Component
      * @param string $message
      * @param int $ttr time to reserve
      * @param int $attempt number
-     * @return bool
+     * @return Promise
      */
     protected function handleMessage($id, $message, $ttr, $attempt)
     {
@@ -235,24 +243,31 @@ abstract class Queue extends Component
             'attempt' => $attempt,
             'error' => $error,
         ]);
-        $this->trigger(self::EVENT_BEFORE_EXEC, $event);
-        if ($event->handled) {
-            return true;
-        }
-        if ($event->error) {
-            return $this->handleError($event);
-        }
-        try {
-            $event->result = $event->job->execute($this);
-        } catch (\Exception $error) {
-            $event->error = $error;
-            return $this->handleError($event);
-        } catch (\Throwable $error) {
-            $event->error = $error;
-            return $this->handleError($event);
-        }
-        $this->trigger(self::EVENT_AFTER_EXEC, $event);
-        return true;
+
+        return new Promise(function ($fulfill, $reject) use ($event) {
+            $this->trigger(self::EVENT_BEFORE_EXEC, $event);
+            if ($event->handled) {
+                call_user_func($fulfill, $event);
+                return ;
+            }
+            if ($event->error) {
+                call_user_func($reject, $event);
+                return ;
+            }
+            try {
+                $event->result = $event->job->execute($this);
+            } catch (\Exception $error) {
+                $event->error = $error;
+                call_user_func($reject, $event);
+                return ;
+            } catch (\Throwable $error) {
+                $event->error = $error;
+                call_user_func($reject, $event);
+                return ;
+            }
+            $this->trigger(self::EVENT_AFTER_EXEC, $event);
+            call_user_func($fulfill, $event);
+        });
     }
 
     /**
@@ -322,6 +337,51 @@ abstract class Queue extends Component
     public function isDone($id)
     {
         return $this->status($id) === self::STATUS_DONE;
+    }
+
+    /**
+     * Gets react EventLoop, if not present, creates one
+     *
+     * @return ReactLoopInterface
+     */
+    public function getLoop()
+    {
+        if (!$this->_loop) {
+            $this->_loop = Factory::create();
+        }
+        return $this->_loop;
+    }
+
+    protected function doWork(callable $canContinue, $repeat, $timeout)
+    {
+        if ($canContinue()) {
+            if (($payload = $this->reserve()) !== null) {
+                list($id, $message, $ttr, $attempt) = $payload;
+                $this->handleMessage($id, $message, $ttr, $attempt)->then(
+                    function () use ($payload) {
+                        $this->delete($payload);
+                    },
+                    function ($event) {
+                        $this->handleError($event);
+                    }
+                );
+
+                $this->getLoop()->futureTick(
+                    function () use ($canContinue, $repeat, $timeout) {
+                        $this->doWork($canContinue, $repeat, $timeout);
+                    }
+                );
+                return ;
+            }
+            if ($repeat) {
+                $this->getLoop()->addTimer(
+                    $timeout,
+                    function () use ($canContinue, $repeat, $timeout) {
+                        $this->doWork($canContinue, $repeat, $timeout);
+                    }
+                );
+            }
+        }
     }
 
     /**

@@ -85,7 +85,7 @@ abstract class AsyncCommand extends Command
                             call_user_func($fulfill, $exitCode);
                             return ;
                         }
-                        $reject($exitCode);
+                        call_user_func($reject, $exitCode);
                     }
                 );
             },

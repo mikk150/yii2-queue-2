@@ -142,10 +142,14 @@ abstract class Command extends Controller
      */
     public function actionExec($id, $ttr, $attempt, $pid)
     {
-        if ($this->queue->execute($id, file_get_contents('php://stdin'), $ttr, $attempt, $pid ?: null)) {
-            return self::EXEC_DONE;
-        }
-        return self::EXEC_RETRY;
+        $promise = $this->queue->execute($id, file_get_contents('php://stdin'), $ttr, $attempt, $pid ?: null);
+        $return = self::EXEC_RETRY;
+        $promise->then(
+            function () use (&$return) {
+                $return = self::EXEC_DONE;
+            }
+        );
+        return $return;
     }
 
     /**
@@ -161,48 +165,48 @@ abstract class Command extends Controller
      */
     protected function handleMessage($id, $message, $ttr, $attempt)
     {
-        // Child process command: php yii queue/exec "id" "ttr" "attempt" "pid"
-        $cmd = [
-            $this->phpBinary,
-            $_SERVER['SCRIPT_FILENAME'],
-            $this->uniqueId . '/exec',
-            $id,
-            $ttr,
-            $attempt,
-            $this->queue->getWorkerPid() ?: 0,
-        ];
+        // // Child process command: php yii queue/exec "id" "ttr" "attempt" "pid"
+        // $cmd = [
+        //     $this->phpBinary,
+        //     $_SERVER['SCRIPT_FILENAME'],
+        //     $this->uniqueId . '/exec',
+        //     $id,
+        //     $ttr,
+        //     $attempt,
+        //     $this->queue->getWorkerPid() ?: 0,
+        // ];
 
-        foreach ($this->getPassedOptions() as $name) {
-            if (in_array($name, $this->options('exec'), true)) {
-                $cmd[] = '--' . $name . '=' . $this->$name;
-            }
-        }
-        if (!in_array('color', $this->getPassedOptions(), true)) {
-            $cmd[] = '--color=' . $this->isColorEnabled();
-        }
+        // foreach ($this->getPassedOptions() as $name) {
+        //     if (in_array($name, $this->options('exec'), true)) {
+        //         $cmd[] = '--' . $name . '=' . $this->$name;
+        //     }
+        // }
+        // if (!in_array('color', $this->getPassedOptions(), true)) {
+        //     $cmd[] = '--color=' . $this->isColorEnabled();
+        // }
 
-        $process = new Process($cmd, null, null, $message, $ttr);
-        try {
-            $result = $process->run(function ($type, $buffer) {
-                if ($type === Process::ERR) {
-                    $this->stderr($buffer);
-                } else {
-                    $this->stdout($buffer);
-                }
-            });
-            if (!in_array($result, [self::EXEC_DONE, self::EXEC_RETRY])) {
-                throw new ProcessFailedException($process);
-            }
-            return $result === self::EXEC_DONE;
-        } catch (ProcessRuntimeException $error) {
-            list($job) = $this->queue->unserializeMessage($message);
-            return $this->queue->handleError(new ExecEvent([
-                'id' => $id,
-                'job' => $job,
-                'ttr' => $ttr,
-                'attempt' => $attempt,
-                'error' => $error,
-            ]));
-        }
+        // $process = new Process($cmd, null, null, $message, $ttr);
+        // try {
+        //     $result = $process->run(function ($type, $buffer) {
+        //         if ($type === Process::ERR) {
+        //             $this->stderr($buffer);
+        //         } else {
+        //             $this->stdout($buffer);
+        //         }
+        //     });
+        //     if (!in_array($result, [self::EXEC_DONE, self::EXEC_RETRY])) {
+        //         throw new ProcessFailedException($process);
+        //     }
+        //     return $result === self::EXEC_DONE;
+        // } catch (ProcessRuntimeException $error) {
+        //     list($job) = $this->queue->unserializeMessage($message);
+        //     return $this->queue->handleError(new ExecEvent([
+        //         'id' => $id,
+        //         'job' => $job,
+        //         'ttr' => $ttr,
+        //         'attempt' => $attempt,
+        //         'error' => $error,
+        //     ]));
+        // }
     }
 }

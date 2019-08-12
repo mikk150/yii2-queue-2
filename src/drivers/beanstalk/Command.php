@@ -8,14 +8,14 @@
 namespace yii\queue\beanstalk;
 
 use yii\console\Exception;
-use yii\queue\cli\Command as CliCommand;
+use yii\queue\cli\AsyncCommand;
 
 /**
  * Manages application beanstalk-queue.
  *
  * @author Roman Zhuravlev <zhuravljov@gmail.com>
  */
-class Command extends CliCommand
+class Command extends AsyncCommand
 {
     /**
      * @var Queue

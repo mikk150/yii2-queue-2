@@ -7,6 +7,7 @@
 
 namespace yii\queue\cli;
 
+use React\Promise\Promise;
 use Yii;
 use yii\base\BootstrapInterface;
 use yii\base\InvalidConfigException;
@@ -109,7 +110,6 @@ abstract class Queue extends BaseQueue implements BootstrapInterface
             return $event->exitCode;
         }
 
-        $exitCode = null;
         try {
             call_user_func($handler, function () use ($loop, $event) {
                 $this->trigger(self::EVENT_WORKER_LOOP, $event);
@@ -153,7 +153,7 @@ abstract class Queue extends BaseQueue implements BootstrapInterface
      * @param int $ttr time to reserve
      * @param int $attempt number
      * @param int|null $workerPid of worker process
-     * @return bool
+     * @return Promise
      * @internal for worker command only
      */
     public function execute($id, $message, $ttr, $attempt, $workerPid)

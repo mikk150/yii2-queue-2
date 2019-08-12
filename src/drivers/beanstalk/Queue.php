@@ -12,14 +12,14 @@ use Pheanstalk\Job;
 use Pheanstalk\Pheanstalk;
 use Pheanstalk\PheanstalkInterface;
 use yii\base\InvalidArgumentException;
-use yii\queue\cli\Queue as CliQueue;
+use yii\queue\cli\AsyncQueue;
 
 /**
  * Beanstalk Queue.
  *
  * @author Roman Zhuravlev <zhuravljov@gmail.com>
  */
-class Queue extends CliQueue
+class Queue extends AsyncQueue
 {
     /**
      * @var string connection host
@@ -38,35 +38,49 @@ class Queue extends CliQueue
      */
     public $commandClass = Command::class;
 
-
     /**
      * Listens queue and runs each job.
      *
      * @param bool $repeat whether to continue listening when queue is empty.
-     * @param int $timeout number of seconds to wait for next message.
+     * @param int $timeout number of seconds to sleep before next iteration.
      * @return null|int exit code.
      * @internal for worker command only.
      * @since 2.0.2
      */
     public function run($repeat, $timeout = 0)
     {
-        return $this->runWorker(function (callable $canContinue) use ($repeat, $timeout) {
-            while ($canContinue()) {
-                if ($payload = $this->getPheanstalk()->reserveFromTube($this->tube, $timeout)) {
-                    $info = $this->getPheanstalk()->statsJob($payload);
-                    if ($this->handleMessage(
-                        $payload->getId(),
-                        $payload->getData(),
-                        $info->ttr,
-                        $info->reserves
-                    )) {
-                        $this->getPheanstalk()->delete($payload);
-                    }
-                } elseif (!$repeat) {
-                    break;
-                }
+        return $this->runWorker(
+            function (callable $canContinue) use ($repeat, $timeout) {
+                $this->doWork($canContinue, $repeat, $timeout);
+                $this->getLoop()->run();
             }
-        });
+        );
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function reserve()
+    {
+        if ($payload = $this->getPheanstalk()->reserveFromTube($this->tube, 0)) {
+            $info = $this->getPheanstalk()->statsJob($payload);
+            return [
+                $payload->getId(),
+                $payload->getData(),
+                $info->ttr,
+                $info->reserves,
+                $payload,
+            ];
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function delete($payload)
+    {
+        list(,,,,$job) = $payload;
+        $this->getPheanstalk()->delete($job);
     }
 
     /**
