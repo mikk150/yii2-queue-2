@@ -256,17 +256,20 @@ abstract class Queue extends Component
             }
             try {
                 $event->result = $event->job->execute($this);
+                $this->trigger(self::EVENT_AFTER_EXEC, $event);
             } catch (\Exception $error) {
                 $event->error = $error;
-                call_user_func($reject, $event);
-                return ;
+                if ($this->handleError($event)) {
+                    call_user_func($reject, $event);
+                }
             } catch (\Throwable $error) {
                 $event->error = $error;
-                call_user_func($reject, $event);
-                return ;
+                if ($this->handleError($event)) {
+                    call_user_func($reject, $event);
+                }
+            } finally {
+                call_user_func($fulfill, $event);
             }
-            $this->trigger(self::EVENT_AFTER_EXEC, $event);
-            call_user_func($fulfill, $event);
         });
     }
 
@@ -309,7 +312,7 @@ abstract class Queue extends Component
             $event->retry = $event->job->canRetry($event->attempt, $event->error);
         }
         $this->trigger(self::EVENT_AFTER_ERROR, $event);
-        return !$event->retry;
+        return $event->retry;
     }
 
     /**
