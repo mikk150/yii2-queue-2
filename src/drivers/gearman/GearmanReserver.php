@@ -20,7 +20,9 @@ class GearmanReserver extends BaseObject
     private $_worker;
     private $_jobs = [];
 
-
+    /**
+     * @inheritdoc
+     */
     public function init()
     {
         $this->_worker = new GearmanWorker();
@@ -35,6 +37,11 @@ class GearmanReserver extends BaseObject
         parent::init();
     }
 
+    /**
+     * Gets one job from gearman
+     * 
+     * @return array
+     */
     public function reserve()
     {
         $this->_worker->work();
