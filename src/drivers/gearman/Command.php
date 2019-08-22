@@ -7,14 +7,14 @@
 
 namespace yii\queue\gearman;
 
-use yii\queue\cli\Command as CliCommand;
+use yii\queue\cli\AsyncCommand;
 
 /**
  * Manages application gearman-queue.
  *
  * @author Roman Zhuravlev <zhuravljov@gmail.com>
  */
-class Command extends CliCommand
+class Command extends AsyncCommand
 {
     /**
      * @var Queue

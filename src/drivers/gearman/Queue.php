@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link http://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
@@ -7,50 +8,64 @@
 
 namespace yii\queue\gearman;
 
+use GearmanClient;
 use yii\base\NotSupportedException;
-use yii\queue\cli\Queue as CliQueue;
+use yii\queue\cli\AsyncQueue;
 
 /**
  * Gearman Queue.
  *
  * @author Roman Zhuravlev <zhuravljov@gmail.com>
  */
-class Queue extends CliQueue
+class Queue extends AsyncQueue
 {
     public $host = 'localhost';
     public $port = 4730;
     public $channel = 'queue';
+
     /**
      * @var string command class name
      */
     public $commandClass = Command::class;
 
+    /**
+     * @var GearmanReserver
+     */
+    private $_reserver;
 
     /**
      * Listens queue and runs each job.
      *
      * @param bool $repeat whether to continue listening when queue is empty.
+     * @param int $timeout number of seconds to sleep before next iteration.
      * @return null|int exit code.
      * @internal for worker command only.
      * @since 2.0.2
      */
-    public function run($repeat)
+    public function run($repeat, $timeout = 0)
     {
-        return $this->runWorker(function (callable $canContinue) use ($repeat) {
-            $worker = new \GearmanWorker();
-            $worker->addServer($this->host, $this->port);
-            $worker->addFunction($this->channel, function (\GearmanJob $payload) {
-                list($ttr, $message) = explode(';', $payload->workload(), 2);
-                $this->handleMessage($payload->handle(), $message, $ttr, 1);
-            });
-            $worker->setTimeout($repeat ? 1000 : 1);
-            while ($canContinue()) {
-                $result = $worker->work();
-                if (!$result && !$repeat) {
-                    break;
-                }
+        return $this->runWorker(
+            function (callable $canContinue) use ($repeat, $timeout) {
+                $this->_reserver = new GearmanReserver([
+                    'host' => $this->host,
+                    'port' => $this->port,
+                    'channel' => $this->channel,
+                ]);
+
+                $this->doWork($canContinue, $repeat, $timeout);
+                $this->getLoop()->run();
             }
-        });
+        );
+    }
+
+    /**
+     * Reserves message for execute.
+     *
+     * @return array|null payload
+     */
+    protected function reserve()
+    {
+        return $this->_reserver->reserve();
     }
 
     /**
@@ -95,7 +110,7 @@ class Queue extends CliQueue
     protected function getClient()
     {
         if (!$this->_client) {
-            $this->_client = new \GearmanClient();
+            $this->_client = new GearmanClient;
             $this->_client->addServer($this->host, $this->port);
         }
         return $this->_client;
