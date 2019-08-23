@@ -7,7 +7,7 @@
 
 namespace tests\app\benchmark;
 
-use tests\app\SimpleJob;
+use tests\app\DummyJob;
 use Yii;
 
 /**
@@ -49,9 +49,7 @@ class Controller extends \yii\console\Controller
     public function actionPushLoadsOfJobs($queue, $jobs = 1000)
     {
         for ($i=0; $i < $jobs; $i++) { 
-            $job = new SimpleJob([
-                'uid' => Yii::$app->security->generateRandomString()
-            ]);
+            $job = new DummyJob();
             Yii::$app->get($queue)->push($job);
         }
     }

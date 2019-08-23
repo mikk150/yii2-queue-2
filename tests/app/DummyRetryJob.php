@@ -20,7 +20,7 @@ class DummyRetryJob extends BaseObject implements RetryableJobInterface
 {
     public function execute($queue)
     {
-        usleep(rand(1000,1000000));
+        usleep(rand(1000, 1000000));
         throw new Exception('Planned error.');
     }
 
