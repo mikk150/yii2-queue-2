@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link http://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
@@ -7,12 +8,17 @@
 
 namespace yii\queue\cli;
 
+use React\EventLoop\Factory;
+use React\EventLoop\LoopInterface;
 use React\Promise\Promise;
 use Yii;
 use yii\base\BootstrapInterface;
 use yii\base\InvalidConfigException;
 use yii\console\Application as ConsoleApp;
 use yii\helpers\Inflector;
+use yii\queue\cli\LoadWatcher;
+use yii\queue\cli\SignalLoop;
+use yii\queue\cli\WorkerEvent;
 use yii\queue\Queue as BaseQueue;
 
 /**
@@ -56,6 +62,10 @@ abstract class Queue extends BaseQueue implements BootstrapInterface
      * @internal for worker command only
      */
     public $messageHandler;
+    /**
+     * @var integer Maximum CPU usage after which no new jobs will be proccessed
+     */
+    public $maxCpuLoad = 80;
 
     /**
      * @var int|null current process ID of a worker.
@@ -63,6 +73,83 @@ abstract class Queue extends BaseQueue implements BootstrapInterface
      */
     private $_workerPid;
 
+    /**
+     * @var LoopInterface
+     */
+    private $_loop;
+
+    /**
+     * Gets react EventLoop, if not present, creates one
+     *
+     * @return LoopInterface
+     */
+    public function getLoop()
+    {
+        if (!$this->_loop) {
+            $this->_loop = Factory::create();
+        }
+        return $this->_loop;
+    }
+
+    protected function doWork(callable $canContinue, $repeat, $timeout)
+    {
+        if ($canContinue()) {
+            if ($this->getLoadWatcher()->getPercentage() > $this->maxCpuLoad) {
+                $this->getLoop()->addTimer(
+                    0.1,
+                    function () use ($canContinue, $repeat, $timeout) {
+                        $this->doWork($canContinue, $repeat, $timeout);
+                    }
+                );
+                echo 'Load throttle';
+                return;
+            }
+            if (($payload = $this->reserve()) !== null) {
+                list($id, $message, $ttr, $attempt) = $payload;
+                $this->handleMessage($id, $message, $ttr, $attempt)->then(
+                    function () use ($payload) {
+                        $this->delete($payload);
+                    },
+                    function ($event) {
+                        $this->handleError($event);
+                    }
+                );
+                $this->getLoop()->futureTick(
+                    function () use ($canContinue, $repeat, $timeout) {
+                        $this->doWork($canContinue, $repeat, $timeout);
+                    }
+                );
+                return;
+            }
+            if ($repeat) {
+                $this->getLoop()->addTimer(
+                    $timeout,
+                    function () use ($canContinue, $repeat, $timeout) {
+                        $this->doWork($canContinue, $repeat, $timeout);
+                    }
+                );
+            }
+        }
+    }
+
+    /**
+     * @var LoadWatcher Load measurement helper
+     */
+    private $_loadWatcher;
+
+    /**
+     * gets Load measurement helper
+     * 
+     * @return LoadWatcher
+     */
+    protected function getLoadWatcher()
+    {
+        if (!$this->_loadWatcher) {
+            $this->_loadWatcher = new LoadWatcher($this->getLoop());
+        }
+
+        return $this->_loadWatcher;
+    }
 
     /**
      * @return string command id

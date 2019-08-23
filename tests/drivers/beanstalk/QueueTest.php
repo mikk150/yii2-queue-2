@@ -75,7 +75,7 @@ class QueueTest extends CliTestCase
 
     public function testRetry()
     {
-        $this->startProcess('php yii queue/listen 1');
+        $this->startProcess('php yii queue/listen 1 --verbose');
         $job = new RetryJob(['uid' => uniqid()]);
         $this->getQueue()->push($job);
         sleep(6);

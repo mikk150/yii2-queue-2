@@ -27,24 +27,24 @@ class Action extends \yii\base\Action
         // Worker will be run in fast mode
         'fast' => [
             'gearmanQueue'     => 'gearman-queue/listen      --isolate=0',
-            'beanstalkQueue'   => 'beanstalk-queue/listen    --isolate=0',
+            // 'beanstalkQueue'   => 'beanstalk-queue/listen    --isolate=0',
             'redisQueue'       => 'redis-queue/listen        --isolate=0',
-            'amqpQueue'        => 'amqp-queue/listen         --isolate=0',
-            'amqpInteropQueue' => 'amqp-interop-queue/listen --isolate=0',
+            // 'amqpQueue'        => 'amqp-queue/listen         --isolate=0',
+            // 'amqpInteropQueue' => 'amqp-interop-queue/listen --isolate=0',
             'mysqlQueue'       => 'mysql-queue/listen 1      --isolate=0',
             'fileQueue'        => 'file-queue/listen 1       --isolate=0',
-            'stompQueue'       => 'stomp-queue/listen        --isolate=0',
+            // 'stompQueue'       => 'stomp-queue/listen        --isolate=0',
         ],
         // Worker will be run in isolate mode
         'isolate' => [
             'gearmanQueue'     => 'gearman-queue/listen      --isolate=1',
-            'beanstalkQueue'   => 'beanstalk-queue/listen    --isolate=1',
+            // 'beanstalkQueue'   => 'beanstalk-queue/listen    --isolate=1',
             'redisQueue'       => 'redis-queue/listen        --isolate=1',
-            'amqpQueue'        => 'amqp-queue/listen         --isolate=1',
-            'amqpInteropQueue' => 'amqp-interop-queue/listen --isolate=1',
-            'mysqlQueue'       => 'mysql-queue/listen 1      --isolate=1',
+            // 'amqpQueue'        => 'amqp-queue/listen         --isolate=1',
+            // 'amqpInteropQueue' => 'amqp-interop-queue/listen --isolate=1',
+            // 'mysqlQueue'       => 'mysql-queue/listen 1      --isolate=1',
             'fileQueue'        => 'file-queue/listen 1       --isolate=1',
-            'stompQueue'       => 'stomp-queue/listen 1      --isolate=1',
+            // 'stompQueue'       => 'stomp-queue/listen 1      --isolate=1',
         ],
     ];
     /**

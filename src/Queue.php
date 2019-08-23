@@ -8,6 +8,7 @@
 namespace yii\queue;
 
 use React\EventLoop\Factory;
+use React\EventLoop\LoopInterface;
 use React\Promise\Promise;
 use yii\base\Component;
 use yii\base\InvalidArgumentException;
@@ -85,11 +86,6 @@ abstract class Queue extends Component
     private $pushTtr;
     private $pushDelay;
     private $pushPriority;
-
-    /**
-     * @var ReactLoopInterface
-     */
-    private $_loop;
 
     /**
      * @inheritdoc
@@ -340,51 +336,6 @@ abstract class Queue extends Component
     public function isDone($id)
     {
         return $this->status($id) === self::STATUS_DONE;
-    }
-
-    /**
-     * Gets react EventLoop, if not present, creates one
-     *
-     * @return ReactLoopInterface
-     */
-    public function getLoop()
-    {
-        if (!$this->_loop) {
-            $this->_loop = Factory::create();
-        }
-        return $this->_loop;
-    }
-
-    protected function doWork(callable $canContinue, $repeat, $timeout)
-    {
-        if ($canContinue()) {
-            if (($payload = $this->reserve()) !== null) {
-                list($id, $message, $ttr, $attempt) = $payload;
-                $this->handleMessage($id, $message, $ttr, $attempt)->then(
-                    function () use ($payload) {
-                        $this->delete($payload);
-                    },
-                    function ($event) {
-                        $this->handleError($event);
-                    }
-                );
-
-                $this->getLoop()->futureTick(
-                    function () use ($canContinue, $repeat, $timeout) {
-                        $this->doWork($canContinue, $repeat, $timeout);
-                    }
-                );
-                return ;
-            }
-            if ($repeat) {
-                $this->getLoop()->addTimer(
-                    $timeout,
-                    function () use ($canContinue, $repeat, $timeout) {
-                        $this->doWork($canContinue, $repeat, $timeout);
-                    }
-                );
-            }
-        }
     }
 
     /**

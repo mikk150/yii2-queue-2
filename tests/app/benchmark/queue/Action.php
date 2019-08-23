@@ -37,13 +37,13 @@ class Action extends \yii\base\Action
         // Worker will be run in isolate mode
         'isolate' => [
             'gearmanQueue'     => 'gearman-queue/run      --isolate=1',
-            'beanstalkQueue'   => 'beanstalk-queue/run    --isolate=1',
+            // 'beanstalkQueue'   => 'beanstalk-queue/run    --isolate=1',
             'redisQueue'       => 'redis-queue/run        --isolate=1',
-            'amqpQueue'        => 'amqp-queue/run         --isolate=1',
-            'amqpInteropQueue' => 'amqp-interop-queue/run --isolate=1',
+            // 'amqpQueue'        => 'amqp-queue/run         --isolate=1',
+            // 'amqpInteropQueue' => 'amqp-interop-queue/run --isolate=1',
             'mysqlQueue'       => 'mysql-queue/run        --isolate=1',
             'fileQueue'        => 'file-queue/run         --isolate=1',
-            'stompQueue'       => 'stomp-queue/run        --isolate=1',
+            // 'stompQueue'       => 'stomp-queue/run        --isolate=1',
         ],
     ];
 
