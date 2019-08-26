@@ -25,9 +25,9 @@ class Action extends \yii\base\Action
     public $modes = [
         // Worker will be run in fast mode
         'fast' => [
-            // 'gearmanQueue'     => 'gearman-queue/run      --isolate=0',
+            'gearmanQueue'     => 'gearman-queue/run      --isolate=0',
             // 'beanstalkQueue'   => 'beanstalk-queue/run    --isolate=0',
-            // 'redisQueue'       => 'redis-queue/run        --isolate=0',
+            'redisQueue'       => 'redis-queue/run        --isolate=0',
             // 'amqpQueue'        => 'amqp-queue/run         --isolate=0',
             // 'amqpInteropQueue' => 'amqp-interop-queue/run --isolate=0',
             'mysqlQueue'       => 'mysql-queue/run        --isolate=0',
