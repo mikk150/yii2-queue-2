@@ -101,7 +101,6 @@ abstract class Queue extends BaseQueue implements BootstrapInterface
                         $this->doWork($canContinue, $repeat, $timeout);
                     }
                 );
-                echo 'Load throttle';
                 return;
             }
             if (($payload = $this->reserve()) !== null) {
