@@ -7,7 +7,7 @@
 
 namespace yii\queue\amqp;
 
-use yii\queue\cli\Command as CliCommand;
+use yii\queue\cli\AsyncCommand;
 
 /**
  * Manages application amqp-queue.
@@ -16,7 +16,7 @@ use yii\queue\cli\Command as CliCommand;
  *
  * @author Roman Zhuravlev <zhuravljov@gmail.com>
  */
-class Command extends CliCommand
+class Command extends AsyncCommand
 {
     /**
      * @var Queue
@@ -29,15 +29,37 @@ class Command extends CliCommand
      */
     protected function isWorkerAction($actionID)
     {
-        return $actionID === 'listen';
+        return in_array($actionID, ['run', 'listen'], true);
     }
 
     /**
-     * Listens amqp-queue and runs new jobs.
-     * It can be used as daemon process.
+     * Runs all jobs from gearman-queue.
+     * It can be used as cron job.
+     *
+     * @return null|int exit code.
      */
-    public function actionListen()
+    public function actionRun()
     {
-        $this->queue->listen();
+        return $this->queue->run(false);
+    }
+
+    /**
+     * Listens redis-queue and runs new jobs.
+     * It can be used as daemon process.
+     *
+     * @param int $timeout number of seconds to wait a job.
+     * @throws Exception when params are invalid.
+     * @return null|int exit code.
+     */
+    public function actionListen($timeout = 3)
+    {
+        if (!is_numeric($timeout)) {
+            throw new Exception('Timeout must be numeric.');
+        }
+        if ($timeout < 1) {
+            throw new Exception('Timeout must be greater than zero.');
+        }
+
+        return $this->queue->run(true, $timeout);
     }
 }

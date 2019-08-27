@@ -26,9 +26,9 @@ class Action extends \yii\base\Action
         // Worker will be run in fast mode
         'fast' => [
             'gearmanQueue'     => 'gearman-queue/run      --isolate=0',
-            // 'beanstalkQueue'   => 'beanstalk-queue/run    --isolate=0',
+            'beanstalkQueue'   => 'beanstalk-queue/run    --isolate=0',
             'redisQueue'       => 'redis-queue/run        --isolate=0',
-            // 'amqpQueue'        => 'amqp-queue/run         --isolate=0',
+            'amqpQueue'        => 'amqp-queue/run         --isolate=0',
             // 'amqpInteropQueue' => 'amqp-interop-queue/run --isolate=0',
             'mysqlQueue'       => 'mysql-queue/run        --isolate=0',
             'fileQueue'        => 'file-queue/run         --isolate=0',
@@ -37,9 +37,9 @@ class Action extends \yii\base\Action
         // Worker will be run in isolate mode
         'isolate' => [
             'gearmanQueue'     => 'gearman-queue/run      --isolate=1',
-            // 'beanstalkQueue'   => 'beanstalk-queue/run    --isolate=1',
+            'beanstalkQueue'   => 'beanstalk-queue/run    --isolate=1',
             'redisQueue'       => 'redis-queue/run        --isolate=1',
-            // 'amqpQueue'        => 'amqp-queue/run         --isolate=1',
+            'amqpQueue'        => 'amqp-queue/run         --isolate=1',
             // 'amqpInteropQueue' => 'amqp-interop-queue/run --isolate=1',
             'mysqlQueue'       => 'mysql-queue/run        --isolate=1',
             'fileQueue'        => 'file-queue/run         --isolate=1',

@@ -96,7 +96,7 @@ abstract class Queue extends BaseQueue implements BootstrapInterface
         if ($canContinue()) {
             if ($this->getLoadWatcher()->getPercentage() > $this->maxCpuLoad) {
                 $this->getLoop()->addTimer(
-                    0.1,
+                    LoadWatcher::CHECK_INTERVAL,
                     function () use ($canContinue, $repeat, $timeout) {
                         $this->doWork($canContinue, $repeat, $timeout);
                     }
@@ -137,7 +137,7 @@ abstract class Queue extends BaseQueue implements BootstrapInterface
     private $_loadWatcher;
 
     /**
-     * gets Load measurement helper
+     * Gets Load measurement helper
      * 
      * @return LoadWatcher
      */

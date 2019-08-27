@@ -13,7 +13,7 @@ use PhpAmqpLib\Message\AMQPMessage;
 use yii\base\Application as BaseApp;
 use yii\base\Event;
 use yii\base\NotSupportedException;
-use yii\queue\cli\Queue as CliQueue;
+use yii\queue\cli\AsyncQueue;
 
 /**
  * Amqp Queue.
@@ -22,7 +22,7 @@ use yii\queue\cli\Queue as CliQueue;
  *
  * @author Roman Zhuravlev <zhuravljov@gmail.com>
  */
-class Queue extends CliQueue
+class Queue extends AsyncQueue
 {
     public $host = 'localhost';
     public $port = 5672;
@@ -45,6 +45,10 @@ class Queue extends CliQueue
      */
     protected $channel;
 
+    /**
+     * @var AmQpReserver
+     */
+    private $_reserver;
 
     /**
      * @inheritdoc
@@ -58,23 +62,47 @@ class Queue extends CliQueue
     }
 
     /**
-     * Listens amqp-queue and runs new jobs.
+     * Listens queue and runs each job.
+     *
+     * @param bool $repeat whether to continue listening when queue is empty.
+     * @param int $timeout number of seconds to sleep before next iteration.
+     * @return null|int exit code.
+     * @internal for worker command only.
+     * @since 2.0.2
      */
-    public function listen()
+    public function run($repeat, $timeout = 0)
     {
-        $this->open();
-        $callback = function (AMQPMessage $payload) {
-            $id = $payload->get('message_id');
-            list($ttr, $message) = explode(';', $payload->body, 2);
-            if ($this->handleMessage($id, $message, $ttr, 1)) {
-                $payload->delivery_info['channel']->basic_ack($payload->delivery_info['delivery_tag']);
+        return $this->runWorker(
+            function (callable $canContinue) use ($repeat, $timeout) {
+                $this->open();
+                $this->_reserver = new AmQpReserver($this->channel, [
+                    'queueName' => $this->queueName
+                ]);
+
+                $this->doWork($canContinue, $repeat, $timeout);
+                $this->getLoop()->run();
             }
-        };
-        $this->channel->basic_qos(null, 1, null);
-        $this->channel->basic_consume($this->queueName, '', false, false, false, false, $callback);
-        while (count($this->channel->callbacks)) {
-            $this->channel->wait();
-        }
+        );
+    }
+
+    /**
+     * Reserves message for execute.
+     *
+     * @return array|null payload
+     */
+    protected function reserve()
+    {
+        return $this->_reserver->reserve();
+    }
+
+    /**
+     * Deletes reserved message.
+     *
+     * @param array $payload
+     */
+    protected function delete($payload)
+    {
+        $payload[4]->delivery_info['channel']->basic_ack($payload[4]->delivery_info['delivery_tag']);
     }
 
     /**
