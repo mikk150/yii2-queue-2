@@ -5,8 +5,9 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace tests\serializers;
+namespace tests\unit\serializers;
 
+use stdClass;
 use yii\queue\serializers\JsonSerializer;
 
 /**
@@ -32,5 +33,16 @@ class JsonSerializerTest extends TestCase
         $this->createSerializer()->serialize([
             'class' => 'failed param',
         ]);
+    }
+
+    /**
+     * @expectedException \yii\base\InvalidConfigException
+     */
+    public function testInvalidObjectKey()
+    {
+        $object = new stdClass();
+        $object->class = 'failed param';
+
+        $this->createSerializer()->serialize($object);
     }
 }

@@ -178,6 +178,13 @@ abstract class Queue extends BaseQueue implements BootstrapInterface
     }
 
     /**
+     * @param array $payload
+     */
+    protected function delete($payload)
+    {
+    }
+
+    /**
      * Runs worker.
      *
      * @param callable $handler

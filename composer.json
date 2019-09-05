@@ -30,9 +30,9 @@
         "jeremeamia/superclosure": "*",
         "yiisoft/yii2-debug": "*",
         "yiisoft/yii2-gii": "*",
-        "phpunit/phpunit": "~4.4",
         "aws/aws-sdk-php": ">=2.4",
-        "enqueue/stomp": "^0.8.39"
+        "enqueue/stomp": "^0.8.39",
+        "codeception/codeception": "^3.0"
     },
     "suggest": {
         "ext-pcntl": "Need for process signals.",

@@ -7,7 +7,7 @@
 
 namespace tests;
 
-use PHPUnit\Framework\TestCase as BaseTestCase;
+use Codeception\Test\Unit as BaseTestCase;
 
 /**
  * Base Test Case.
@@ -16,4 +16,5 @@ use PHPUnit\Framework\TestCase as BaseTestCase;
  */
 abstract class TestCase extends BaseTestCase
 {
+
 }

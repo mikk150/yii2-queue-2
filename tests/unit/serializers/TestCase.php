@@ -5,7 +5,7 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace tests\serializers;
+namespace tests\unit\serializers;
 
 use tests\app\SimpleJob;
 use yii\base\BaseObject;

@@ -27,18 +27,7 @@ abstract class AsyncCommand extends Command
         }
     }
 
-    /**
-     * Handles message using child process.
-     *
-     * @param string|null $id of a message
-     * @param string $message
-     * @param int $ttr time to reserve
-     * @param int $attempt number
-     * @return Promise
-     * @throws
-     * @see actionExec()
-     */
-    protected function handleMessage($id, $message, $ttr, $attempt)
+    protected function getCommand($id, $message, $ttr, $attempt)
     {
         // Child process command: php yii queue/exec "id" "ttr" "attempt" "pid"
         $cmd = [
@@ -60,7 +49,23 @@ abstract class AsyncCommand extends Command
             $cmd[] = '--color=' . $this->isColorEnabled();
         }
 
-        $process = new Process(join(' ', $cmd));
+        return $cmd;
+    }
+
+    /**
+     * Handles message using child process.
+     *
+     * @param string|null $id of a message
+     * @param string $message
+     * @param int $ttr time to reserve
+     * @param int $attempt number
+     * @return Promise
+     * @throws
+     * @see actionExec()
+     */
+    protected function handleMessage($id, $message, $ttr, $attempt)
+    {
+        $process = new Process(join(' ', $this->getCommand($id, $message, $ttr, $attempt)));
 
         return new Promise(
             function ($fulfill, $reject) use ($process, $message) {
