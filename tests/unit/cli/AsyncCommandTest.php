@@ -118,9 +118,7 @@ class AsyncCommandTest extends ApplicationTestCase
     {
         $queue = $this->construct(ArrayQueue::class, [], [
             'delete' => Expected::never(),
-            'handleError' => Expected::once(function ($errorEvent) {
-                
-            })
+            'handleError' => Expected::once()
         ]);
 
         $queue->push(new DummyJob());

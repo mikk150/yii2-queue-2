@@ -15,6 +15,7 @@ use Yii;
 use yii\base\BootstrapInterface;
 use yii\base\InvalidConfigException;
 use yii\console\Application as ConsoleApp;
+use yii\helpers\ArrayHelper;
 use yii\helpers\Inflector;
 use yii\queue\cli\LoadWatcher;
 use yii\queue\cli\SignalLoop;
@@ -62,10 +63,14 @@ abstract class Queue extends BaseQueue implements BootstrapInterface
      * @internal for worker command only
      */
     public $messageHandler;
+
     /**
-     * @var integer Maximum CPU usage after which no new jobs will be proccessed
+     * @var LoadWatcher|array|string
      */
-    public $maxCpuLoad = 80;
+    public $loadWatcher = [
+        'class' => LoadWatcher::class,
+        'maxCpuLoad' => 80
+    ];
 
     /**
      * @var int|null current process ID of a worker.
@@ -77,6 +82,17 @@ abstract class Queue extends BaseQueue implements BootstrapInterface
      * @var LoopInterface
      */
     private $_loop;
+
+    public function init()
+    {
+        if (!($this->loadWatcher instanceof LoadWatcher)) {
+            $this->loadWatcher = Yii::createObject(ArrayHelper::merge($this->loadWatcher, [
+                'loop' => $this->getLoop()
+            ]));
+        }
+
+        parent::init();
+    }
 
     /**
      * Gets react EventLoop, if not present, creates one
@@ -94,7 +110,7 @@ abstract class Queue extends BaseQueue implements BootstrapInterface
     protected function doWork(callable $canContinue, $repeat, $timeout)
     {
         if ($canContinue()) {
-            if ($this->getLoadWatcher()->getPercentage() > $this->maxCpuLoad) {
+            if (!$this->loadWatcher->shouldGetJob()) {
                 $this->getLoop()->addTimer(
                     LoadWatcher::CHECK_INTERVAL,
                     function () use ($canContinue, $repeat, $timeout) {
@@ -129,25 +145,6 @@ abstract class Queue extends BaseQueue implements BootstrapInterface
                 );
             }
         }
-    }
-
-    /**
-     * @var LoadWatcher Load measurement helper
-     */
-    private $_loadWatcher;
-
-    /**
-     * Gets Load measurement helper
-     * 
-     * @return LoadWatcher
-     */
-    protected function getLoadWatcher()
-    {
-        if (!$this->_loadWatcher) {
-            $this->_loadWatcher = new LoadWatcher($this->getLoop());
-        }
-
-        return $this->_loadWatcher;
     }
 
     /**

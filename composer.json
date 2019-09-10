@@ -31,6 +31,7 @@
         "yiisoft/yii2-debug": "*",
         "yiisoft/yii2-gii": "*",
         "aws/aws-sdk-php": ">=2.4",
+        "phpunit/phpunit": "<8.0.0",
         "enqueue/stomp": "^0.8.39",
         "codeception/codeception": "^3.0"
     },

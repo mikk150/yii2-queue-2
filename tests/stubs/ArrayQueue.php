@@ -15,6 +15,11 @@ class ArrayQueue extends AsyncQueue
      * @var array of payloads
      */
     public $payloads = [];
+
+    public $loadWatcher = [
+        'class' => DummyLoadWatcher::class
+    ];
+    
     /**
      * @var int last pushed ID
      */

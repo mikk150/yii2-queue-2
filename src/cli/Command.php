@@ -7,11 +7,11 @@
 
 namespace yii\queue\cli;
 
-use Symfony\Component\Process\Exception\ProcessFailedException;
-use Symfony\Component\Process\Exception\RuntimeException as ProcessRuntimeException;
-use Symfony\Component\Process\Process;
+use React\ChildProcess\Process;
+use React\Promise\Promise;
+use yii\base\InvalidArgumentException;
 use yii\console\Controller;
-use yii\queue\ExecEvent;
+use yii\queue\cli\AsyncQueue;
 
 /**
  * Base Command.
@@ -84,6 +84,18 @@ abstract class Command extends Controller
     }
 
     /**
+     * @inheritdoc
+     */
+    public function init()
+    {
+        parent::init();
+
+        if (!($this->queue instanceof AsyncQueue)) {
+            throw new InvalidArgumentException('`queue` must be instance of ' . AsyncQueue::class);
+        }
+    }
+
+    /**
      * @param string $actionID
      * @return bool
      * @since 2.0.2
@@ -152,6 +164,31 @@ abstract class Command extends Controller
         return $return;
     }
 
+    protected function getCommand($id, $message, $ttr, $attempt)
+    {
+        // Child process command: php yii queue/exec "id" "ttr" "attempt" "pid"
+        $cmd = [
+            $this->phpBinary,
+            $_SERVER['SCRIPT_FILENAME'],
+            $this->uniqueId . '/exec',
+            $id,
+            $ttr,
+            $attempt,
+            $this->queue->getWorkerPid() ?: 0,
+        ];
+
+        foreach ($this->getPassedOptions() as $name) {
+            if (in_array($name, $this->options('exec'), true)) {
+                $cmd[] = '--' . $name . '=' . $this->$name;
+            }
+        }
+        if (!in_array('color', $this->getPassedOptions(), true)) {
+            $cmd[] = '--color=' . $this->isColorEnabled();
+        }
+
+        return $cmd;
+    }
+
     /**
      * Handles message using child process.
      *
@@ -159,54 +196,44 @@ abstract class Command extends Controller
      * @param string $message
      * @param int $ttr time to reserve
      * @param int $attempt number
-     * @return bool
+     * @return Promise
      * @throws
      * @see actionExec()
      */
     protected function handleMessage($id, $message, $ttr, $attempt)
     {
-        // // Child process command: php yii queue/exec "id" "ttr" "attempt" "pid"
-        // $cmd = [
-        //     $this->phpBinary,
-        //     $_SERVER['SCRIPT_FILENAME'],
-        //     $this->uniqueId . '/exec',
-        //     $id,
-        //     $ttr,
-        //     $attempt,
-        //     $this->queue->getWorkerPid() ?: 0,
-        // ];
+        $process = new Process(join(' ', $this->getCommand($id, $message, $ttr, $attempt)));
 
-        // foreach ($this->getPassedOptions() as $name) {
-        //     if (in_array($name, $this->options('exec'), true)) {
-        //         $cmd[] = '--' . $name . '=' . $this->$name;
-        //     }
-        // }
-        // if (!in_array('color', $this->getPassedOptions(), true)) {
-        //     $cmd[] = '--color=' . $this->isColorEnabled();
-        // }
-
-        // $process = new Process($cmd, null, null, $message, $ttr);
-        // try {
-        //     $result = $process->run(function ($type, $buffer) {
-        //         if ($type === Process::ERR) {
-        //             $this->stderr($buffer);
-        //         } else {
-        //             $this->stdout($buffer);
-        //         }
-        //     });
-        //     if (!in_array($result, [self::EXEC_DONE, self::EXEC_RETRY])) {
-        //         throw new ProcessFailedException($process);
-        //     }
-        //     return $result === self::EXEC_DONE;
-        // } catch (ProcessRuntimeException $error) {
-        //     list($job) = $this->queue->unserializeMessage($message);
-        //     return $this->queue->handleError(new ExecEvent([
-        //         'id' => $id,
-        //         'job' => $job,
-        //         'ttr' => $ttr,
-        //         'attempt' => $attempt,
-        //         'error' => $error,
-        //     ]));
-        // }
+        return new Promise(
+            function ($fulfill, $reject) use ($process, $message) {
+                $process->start($this->queue->getLoop());
+                $process->stdin->end($message);
+                $process->stderr->on(
+                    'data',
+                    function ($buffer) {
+                        $this->stderr($buffer);
+                    }
+                );
+                $process->stdout->on(
+                    'data',
+                    function ($buffer) {
+                        $this->stdout($buffer);
+                    }
+                );
+                $process->on(
+                    'exit',
+                    function ($exitCode) use ($fulfill, $reject) {
+                        if ($exitCode == self::EXEC_DONE) {
+                            call_user_func($fulfill, $exitCode);
+                            return ;
+                        }
+                        call_user_func($reject, $exitCode);
+                    }
+                );
+            },
+            function () use (&$process) {
+                $process->terminate();
+            }
+        );
     }
 }
