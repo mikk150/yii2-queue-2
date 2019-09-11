@@ -18,7 +18,6 @@
     "require": {
         "php": ">=5.5.0",
         "yiisoft/yii2": "~2.0.14",
-        "symfony/process": "^3.3||^4.0",
         "react/child-process": "^0.6.0",
         "react/promise": "^2.7.0"
     },

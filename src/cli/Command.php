@@ -230,9 +230,6 @@ abstract class Command extends Controller
                         call_user_func($reject, $exitCode);
                     }
                 );
-            },
-            function () use (&$process) {
-                $process->terminate();
             }
         );
     }
