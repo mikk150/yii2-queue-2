@@ -1,12 +1,12 @@
 <?php
 
-namespace tests\unit\drivers;
+namespace tests\unit\drivers\traits;
 
 use React\Promise\Promise;
 use tests\app\PriorityJob;
 use yii\queue\ExecEvent;
 
-abstract class PriorityTestCase extends TestCase
+trait PriorityTrait
 {
     public function testPriority()
     {

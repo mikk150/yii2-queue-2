@@ -2,14 +2,20 @@
 
 namespace tests\unit\drivers\db;
 
+use React\Promise\Promise;
 use tests\app\DummyJob;
-use tests\unit\drivers\PriorityTestCase;
+use tests\unit\drivers\traits\DelayTrait;
+use tests\unit\drivers\traits\PriorityTrait;
 use yii\db\Query;
 use yii\mutex\Mutex;
 use yii\queue\db\Queue;
+use yii\queue\ExecEvent;
 
-abstract class TestCase extends PriorityTestCase
+abstract class TestCase extends \tests\unit\drivers\TestCase
 {
+    use PriorityTrait;
+    use DelayTrait;
+
     public $queueClass = Queue::class;
 
     public $queueConfig = [
@@ -120,21 +126,46 @@ abstract class TestCase extends PriorityTestCase
         $queue->status(10);
     }
 
-    // public function testStatusStartedButNotFinished()
-    // {
-    //     // $queue = $this->construct(Queue::class, [[
-    //     //     'db' => $this->getQueue()->db,
-    //     //     'mutex' => $this->getQueue()->mutex,
-    //     // ]],
-    //     // [
-    //     //     'handleMessage' => function () {
-                
-    //     //     }
-    //     // ]);
+    public function testStatusStartedButNotFinishedJob()
+    {
+        $id = null;
+        $queue = $this->construct(Queue::class, [[
+            'db' => $this->getQueue()->db,
+            'mutex' => $this->getQueue()->mutex,
+        ]],
+        [
+            'handleMessage' => function () use (&$queue, &$id) {
+                $this->assertEquals(Queue::STATUS_RESERVED, $queue->status($id));
+                return new Promise(function ($fulfull) {
+                    call_user_func($fulfull, new ExecEvent());
+                });
+            }
+        ]);
 
-    //     // $id = $queue->push(new DummyJob());
+        $id = $queue->push(new DummyJob());
 
-    //     $queue->run(false);
-    //     $this->assertEquals(Queue::STATUS_WAITING, $queue->status($id));
-    // }
+        $queue->run(false);
+    }
+
+    public function testStatusOnFinishedJobAndDeleteReservedFalse()
+    {
+        $queue = $this->construct(Queue::class, [[
+            'db' => $this->getQueue()->db,
+            'mutex' => $this->getQueue()->mutex,
+            'deleteReleased' => false,
+        ]],
+        [
+            'handleMessage' => function () {
+                return new Promise(function ($fulfull) {
+                    call_user_func($fulfull, new ExecEvent());
+                });
+            }
+        ]);
+
+        $id = $queue->push(new DummyJob());
+
+        $queue->run(false);
+
+        $this->assertEquals(Queue::STATUS_DONE, $queue->status($id));
+    }
 }
