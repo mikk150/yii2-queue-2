@@ -11,6 +11,7 @@ use React\ChildProcess\Process;
 use React\Promise\Promise;
 use yii\base\InvalidArgumentException;
 use yii\console\Controller;
+use yii\helpers\Console;
 use yii\queue\cli\AsyncQueue;
 
 /**
@@ -154,7 +155,7 @@ abstract class Command extends Controller
      */
     public function actionExec($id, $ttr, $attempt, $pid)
     {
-        $promise = $this->queue->execute($id, file_get_contents('php://stdin'), $ttr, $attempt, $pid ?: null);
+        $promise = $this->queue->execute($id, Console::stdin(true), $ttr, $attempt, $pid ?: null);
         $return = self::EXEC_RETRY;
         $promise->then(
             function () use (&$return) {

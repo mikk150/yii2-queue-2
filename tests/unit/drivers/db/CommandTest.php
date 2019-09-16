@@ -4,6 +4,7 @@ namespace tests\unit\drivers\db;
 
 use tests\unit\drivers\CommandTestCase;
 use yii\queue\db\Command;
+use yii\queue\db\InfoAction;
 use yii\queue\db\Queue;
 
 class CommandTest extends CommandTestCase
