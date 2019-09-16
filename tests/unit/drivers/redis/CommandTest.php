@@ -1,10 +1,11 @@
 <?php
 
-namespace tests\unit\drivers\db;
+namespace tests\unit\drivers\redis;
 
 use tests\unit\drivers\CommandTestCase;
-use yii\queue\db\Command;
-use yii\queue\db\Queue;
+use yii\queue\redis\Command;
+use yii\queue\redis\InfoAction;
+use yii\queue\redis\Queue;
 
 class CommandTest extends CommandTestCase
 {
