@@ -121,7 +121,7 @@ class Queue extends AsyncQueue
             $this->getPheanstalk()->delete(new Job($id, null));
             return true;
         } catch (ServerException $e) {
-            if (strpos($e->getMessage(), 'NOT_FOUND') === 0) {
+            if (strpos($e->getMessage(), 'NOT_FOUND') !== false) {
                 return false;
             }
 
