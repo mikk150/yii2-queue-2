@@ -7,6 +7,7 @@
 
 namespace yii\queue\amqp;
 
+use yii\console\Exception;
 use yii\queue\cli\AsyncCommand;
 
 /**
@@ -41,6 +42,18 @@ class Command extends AsyncCommand
     public function actionRun()
     {
         return $this->queue->run(false);
+    }
+
+    /**
+     * Clears the queue.
+     *
+     * @since 2.0.1
+     */
+    public function actionClear()
+    {
+        if ($this->confirm('Are you sure?')) {
+            $this->queue->clear();
+        }
     }
 
     /**

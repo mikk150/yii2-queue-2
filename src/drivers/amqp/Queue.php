@@ -10,6 +10,7 @@ namespace yii\queue\amqp;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
+use Yii;
 use yii\base\Application as BaseApp;
 use yii\base\Event;
 use yii\base\NotSupportedException;
@@ -74,11 +75,6 @@ class Queue extends AsyncQueue
     {
         return $this->runWorker(
             function (callable $canContinue) use ($repeat, $timeout) {
-                $this->open();
-                $this->_reserver = new AmQpReserver($this->channel, [
-                    'queueName' => $this->queueName
-                ]);
-
                 $this->doWork($canContinue, $repeat, $timeout);
                 $this->getLoop()->run();
             }
@@ -92,7 +88,7 @@ class Queue extends AsyncQueue
      */
     protected function reserve()
     {
-        return $this->_reserver->reserve();
+        return $this->getReserver()->reserve();
     }
 
     /**
@@ -103,6 +99,17 @@ class Queue extends AsyncQueue
     protected function delete($payload)
     {
         $payload[4]->delivery_info['channel']->basic_ack($payload[4]->delivery_info['delivery_tag']);
+    }
+
+    /**
+     * Clears the queue.
+     */
+    public function clear()
+    {
+        while ($payload = $this->reserve()) {
+            Yii::info('cleaning ' . $payload[0], __CLASS__);
+            $this->delete($payload);
+        }
     }
 
     /**
@@ -126,7 +133,7 @@ class Queue extends AsyncQueue
             ]),
             $this->exchangeName
         );
-
+        $this->closeChannel();
         return $id;
     }
 
@@ -139,29 +146,50 @@ class Queue extends AsyncQueue
     }
 
     /**
+     * @return AmQpReserver
+     */
+    protected function getReserver()
+    {
+        $this->open();
+        if (!$this->_reserver) {
+            $this->_reserver = new AmQpReserver($this->channel, [
+                'queueName' => $this->queueName
+            ]);
+        }
+        return $this->_reserver;
+    }
+
+    /**
      * Opens connection and channel.
      */
     protected function open()
     {
+        if (!$this->connection) {
+            $this->connection = new AMQPStreamConnection($this->host, $this->port, $this->user, $this->password, $this->vhost);
+        }
         if ($this->channel) {
             return;
         }
-        $this->connection = new AMQPStreamConnection($this->host, $this->port, $this->user, $this->password, $this->vhost);
         $this->channel = $this->connection->channel();
         $this->channel->queue_declare($this->queueName, false, true, false, false);
         $this->channel->exchange_declare($this->exchangeName, 'direct', false, true, false);
         $this->channel->queue_bind($this->queueName, $this->exchangeName);
     }
 
-    /**
-     * Closes connection and channel.
-     */
-    protected function close()
+    protected function closeChannel()
     {
         if (!$this->channel) {
             return;
         }
         $this->channel->close();
+    }
+
+    /**
+     * Closes connection and channel.
+     */
+    public function close()
+    {
+        $this->closeChannel();
         $this->connection->close();
     }
 }

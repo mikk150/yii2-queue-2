@@ -3,7 +3,6 @@
 namespace yii\queue\amqp;
 
 use PhpAmqpLib\Channel\AMQPChannel;
-use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Message\AMQPMessage;
 use yii\base\BaseObject;
 
