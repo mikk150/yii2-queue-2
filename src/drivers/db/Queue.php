@@ -63,23 +63,6 @@ class Queue extends AsyncQueue
     }
 
     /**
-     * Listens queue and runs each job.
-     *
-     * @param bool $repeat whether to continue listening when queue is empty.
-     * @param int $timeout number of seconds to sleep before next iteration.
-     * @return null|int exit code.
-     * @internal for worker command only
-     * @since 2.0.2
-     */
-    public function run($repeat, $timeout = 0)
-    {
-        return $this->runWorker(function (callable $canContinue) use ($repeat, $timeout) {
-            $this->doWork($canContinue, $repeat, $timeout);
-            $this->getLoop()->run();
-        });
-    }
-
-    /**
      * @inheritdoc
      */
     public function status($id)
