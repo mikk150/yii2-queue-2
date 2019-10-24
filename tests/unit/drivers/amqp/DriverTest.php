@@ -3,11 +3,14 @@
 namespace tests\unit\drivers\amqp;
 
 use Codeception\Stub\Expected;
+use Codeception\Util\Stub;
 use PhpAmqpLib\Channel\AMQPChannel;
+use PhpAmqpLib\Message\AMQPMessage;
 use React\Promise\Promise;
 use tests\app\DummyJob;
 use tests\unit\drivers\TestCase;
 use Yii;
+use yii\queue\amqp\AmQpReserver;
 use yii\queue\amqp\Queue;
 use yii\queue\ExecEvent;
 
@@ -79,47 +82,27 @@ class DriverTest extends TestCase
 
     public function testRun()
     {
-        $queue = $this->getQueue();
-        $id = $queue->push(new DummyJob());
+        $queue = $this->construct($this->queueClass, [$this->queueConfig], [
+            'getReserver' => $this->makeEmpty(AmQpReserver::class, [
+                'reserve' => Stub::consecutive([1, 'message', 110, 1, $this->make(AMQPMessage::class, [
+                    'delivery_info' => [
+                        'channel' => $this->make(AMQPChannel::class, [
+                            'basic_ack' => Expected::once(function ($tag) {
+                                $this->assertEquals('tag', $tag);
+                            })
+                        ]),
+                        'delivery_tag' => 'tag'
+                    ],
+                ])], null)
+            ]),
+            'handleMessage' => function ($fetchedId) {
+                $this->assertEquals(1, $fetchedId);
+                return new Promise(function ($fulfull) {
+                    call_user_func($fulfull, new ExecEvent());
+                });
+            },
+        ]);
 
-        $queue = $this->construct(
-            $this->queueClass,
-            [
-                $this->queueConfig
-            ],
-            [
-                'handleMessage' => function ($fetchedId) use ($id) {
-                    $this->assertEquals($id, $fetchedId);
-                    return new Promise(function ($fulfull) {
-                        call_user_func($fulfull, new ExecEvent());
-                    });
-                },
-                'delete' => Expected::once(function ($payload) {
-                    $payload[4]->delivery_info['channel']->basic_ack($payload[4]->delivery_info['delivery_tag']);
-                }),
-            ]
-        );
         $queue->run(false);
     }
-
-    // public function testStatusStartedButNotFinishedJob()
-    // {
-    //     $queue = $this->getQueue();
-    //     $id = $queue->push(new DummyJob());
-
-    //     $queue = $this->construct(
-    //         Queue::class,
-    //         [$this->queueConfig],
-    //         [
-    //             'delete' => Expected::once(),
-    //             'handleMessage' => function ($id) {
-    //                 return new Promise(function ($fulfull) {
-    //                     call_user_func($fulfull, new ExecEvent());
-    //                 });
-    //             }
-    //         ]
-    //     );
-
-    //     $queue->run(false);
-    // }
 }
