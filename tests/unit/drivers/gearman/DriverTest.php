@@ -35,4 +35,45 @@ class DriverTest extends \tests\unit\drivers\TestCase
 
         $queue->delay(10)->push(new DummyJob());
     }
+
+    public function testStatusOnWaitingJob()
+    {
+        $queue = $this->getQueue();
+
+        $jobId = $queue->push(new DummyJob());
+
+        $this->assertEquals(Queue::STATUS_WAITING, $queue->status($jobId));
+    }
+
+    public function testStatusOnDoneJob()
+    {
+        $queue = $this->getQueue();
+
+        $jobId = $queue->push(new DummyJob());
+
+        $queue->run(false);
+
+        $this->assertEquals(Queue::STATUS_DONE, $queue->status($jobId));
+    }
+
+    public function testStatusNotExistingJob()
+    {
+        $queue = $this->getQueue();
+
+        $this->assertEquals(Queue::STATUS_DONE, $queue->status('notexsiting'));
+    }
+
+    public function testReservedJob()
+    {
+        /**
+         * @var \yii\queue\Queue $queue
+         */
+        $queue = $this->construct($this->queueClass, [$this->queueConfig], [
+            'getClient' => $this->make(\GearmanClient::class, [
+                'jobStatus' => [true, true]
+            ])
+        ]);
+
+        $this->assertEquals(Queue::STATUS_RESERVED, $queue->status('definitelyreservedjob'));
+    }
 }

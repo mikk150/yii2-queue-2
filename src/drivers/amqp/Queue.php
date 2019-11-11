@@ -10,7 +10,6 @@ namespace yii\queue\amqp;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
-use Yii;
 use yii\base\Application as BaseApp;
 use yii\base\Event;
 use yii\base\NotSupportedException;
@@ -80,17 +79,6 @@ class Queue extends AsyncQueue
     protected function delete($payload)
     {
         $payload[4]->delivery_info['channel']->basic_ack($payload[4]->delivery_info['delivery_tag']);
-    }
-
-    /**
-     * Clears the queue.
-     */
-    public function clear()
-    {
-        while ($payload = $this->reserve()) {
-            Yii::info('cleaning ' . $payload[0], __CLASS__);
-            $this->delete($payload);
-        }
     }
 
     /**

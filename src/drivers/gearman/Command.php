@@ -7,6 +7,7 @@
 
 namespace yii\queue\gearman;
 
+use yii\console\Exception;
 use yii\queue\cli\AsyncCommand;
 
 /**
@@ -20,7 +21,6 @@ class Command extends AsyncCommand
      * @var Queue
      */
     public $queue;
-
 
     /**
      * @inheritdoc
@@ -47,8 +47,15 @@ class Command extends AsyncCommand
      *
      * @return null|int exit code.
      */
-    public function actionListen()
+    public function actionListen($timeout = 3)
     {
-        return $this->queue->run(true);
+        if (!is_numeric($timeout)) {
+            throw new Exception('Timeout must be numeric.');
+        }
+
+        if ($timeout < 1) {
+            throw new Exception('Timeout must be greater than zero.');
+        }
+        return $this->queue->run(true, $timeout);
     }
 }
