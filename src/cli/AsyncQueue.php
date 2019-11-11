@@ -7,6 +7,7 @@
 
 namespace yii\queue\cli;
 
+use Yii;
 use yii\base\BootstrapInterface;
 
 /**
@@ -20,4 +21,15 @@ abstract class AsyncQueue extends Queue implements BootstrapInterface
      * @var string command class name
      */
     public $commandClass = AsyncCommand::class;
+
+    /**
+     * Clears the queue.
+     */
+    public function clear()
+    {
+        while ($payload = $this->reserve()) {
+            Yii::info('cleaning ' . $payload[0], __CLASS__);
+            $this->delete($payload);
+        }
+    }
 }

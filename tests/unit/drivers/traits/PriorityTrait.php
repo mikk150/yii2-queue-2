@@ -19,21 +19,19 @@ trait PriorityTrait
             'handleMessage' => function ($id, $message, $ttr, $attempt) use (&$messages, &$queue) {
                 $messages[] = $queue->serializer->unserialize($message);
                 return new Promise(function ($fulfill) {
-                    return new ExecEvent(); 
+                    return new ExecEvent();
                 });
             }
         ]);
-        
-        $queue->priority(300)->push(new PriorityJob(['number' => 300]));
-        $queue->priority(400)->push(new PriorityJob(['number' => 400]));
-        $queue->priority(100)->push(new PriorityJob(['number' => 100]));
-        $queue->priority(200)->push(new PriorityJob(['number' => 200]));
 
+        $queue->priority(2000)->push(new PriorityJob(['number' => 2000]));
+        $queue->priority(100)->push(new PriorityJob(['number' => 100]));
+        $queue->priority(1024)->push(new PriorityJob(['number' => 1024]));
         $queue->run(false);
 
+
         $this->assertEquals(100, $messages[0]->number);
-        $this->assertEquals(200, $messages[1]->number);
-        $this->assertEquals(300, $messages[2]->number);
-        $this->assertEquals(400, $messages[3]->number);
+        $this->assertEquals(1024, $messages[1]->number);
+        $this->assertEquals(2000, $messages[2]->number);
     }
 }
