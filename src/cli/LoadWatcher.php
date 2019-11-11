@@ -47,7 +47,7 @@ class LoadWatcher extends BaseObject
         }
         
         if (stristr(PHP_OS, "win")) {
-            
+            return 0;
         }
 
         $this->_lastCheck = microtime(true);
