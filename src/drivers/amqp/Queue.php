@@ -7,7 +7,9 @@
 
 namespace yii\queue\amqp;
 
+use PhpAmqpLib\Channel\AbstractChannel;
 use PhpAmqpLib\Channel\AMQPChannel;
+use PhpAmqpLib\Connection\AbstractConnection;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 use yii\base\Application as BaseApp;
@@ -39,11 +41,11 @@ class Queue extends AsyncQueue
     /**
      * @var AMQPStreamConnection
      */
-    protected $connection;
+    private $_connection;
     /**
      * @var AMQPChannel
      */
-    protected $channel;
+    private $_channel;
 
     /**
      * @var AmQpReserver
@@ -93,9 +95,8 @@ class Queue extends AsyncQueue
             throw new NotSupportedException('Job priority is not supported in the driver.');
         }
 
-        $this->open();
         $id = uniqid('', true);
-        $this->channel->basic_publish(
+        $this->getChannel()->basic_publish(
             new AMQPMessage("$ttr;$message", [
                 'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
                 'message_id' => $id,
@@ -119,9 +120,9 @@ class Queue extends AsyncQueue
      */
     protected function getReserver()
     {
-        $this->open();
+        // $this->open();
         if (!$this->_reserver) {
-            $this->_reserver = new AmQpReserver($this->channel, [
+            $this->_reserver = new AmQpReserver($this->getChannel(), [
                 'queueName' => $this->queueName
             ]);
         }
@@ -129,28 +130,42 @@ class Queue extends AsyncQueue
     }
 
     /**
-     * Opens connection and channel.
+     * Gets AmQP channel
+     *
+     * @return AbstractChannel
      */
-    protected function open()
+    public function getChannel()
     {
-        if (!$this->connection) {
-            $this->connection = new AMQPStreamConnection($this->host, $this->port, $this->user, $this->password, $this->vhost);
+        if (!$this->_channel) {
+            $this->_channel = $this->getConnection()->channel();
+            $this->_channel->queue_declare($this->queueName, false, true, false, false);
+            $this->_channel->exchange_declare($this->exchangeName, 'direct', false, true, false);
+            $this->_channel->queue_bind($this->queueName, $this->exchangeName);
         }
-        if ($this->channel) {
-            return;
+
+        return $this->_channel;
+    }
+
+    /**
+     * Gets AmpQP Connection
+     *
+     * @return AbstractConnection
+     */
+    public function getConnection()
+    {
+        if (!$this->_connection) {
+            $this->_connection = new AMQPStreamConnection($this->host, $this->port, $this->user, $this->password, $this->vhost);
         }
-        $this->channel = $this->connection->channel();
-        $this->channel->queue_declare($this->queueName, false, true, false, false);
-        $this->channel->exchange_declare($this->exchangeName, 'direct', false, true, false);
-        $this->channel->queue_bind($this->queueName, $this->exchangeName);
+        return $this->_connection;
     }
 
     protected function closeChannel()
     {
-        if (!$this->channel) {
+        if (!$this->_channel) {
             return;
         }
-        $this->channel->close();
+        $this->_channel->close();
+        $this->_channel = null;
     }
 
     /**
@@ -159,9 +174,9 @@ class Queue extends AsyncQueue
     public function close()
     {
         $this->closeChannel();
-        if (!$this->connection) {
-            return ;
+        if ($this->_connection) {
+            $this->_connection->close();
+            $this->_connection = null;
         }
-        $this->connection->close();
     }
 }

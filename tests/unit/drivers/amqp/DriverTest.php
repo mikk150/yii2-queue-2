@@ -72,7 +72,7 @@ class DriverTest extends TestCase
     public function testPushMessage()
     {
         $queue = $this->construct($this->queueClass, [$this->queueConfig], [
-            'channel' => $this->make(AMQPChannel::class, [
+            'getChannel' => $this->make(AMQPChannel::class, [
                 'basic_publish' => Expected::once()
             ])
         ]);
